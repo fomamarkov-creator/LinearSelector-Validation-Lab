@@ -21,8 +21,11 @@ jobs:
         method: 'network'
 
     - name: Configure CMake
+      shell: bash
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80
+        export CUDA_PATH=$CUDA_PATH_V12_1
+        export PATH=$CUDA_PATH/bin:$PATH
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_CUDA_COMPILER="$CUDA_PATH/bin/nvcc.exe"
 
     - name: Build Project
       run: |
