@@ -8,7 +8,7 @@ on:
 jobs:
   build-linux:
     name: Build & Test (Ubuntu + CUDA)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout repository
@@ -16,14 +16,16 @@ jobs:
 
     - name: Install CUDA Core
       run: |
-        wget https://nvidia.com
-        sudo dpkg -i cuda-keyring_1.1-1_all.deb
+        # Прямая установка без скачивания deb-файлов, которые часто меняются
         sudo apt-get update
-        sudo apt-get install -y cuda-nvcc-12-1 cuda-cudart-dev-12-1
+        sudo apt-get install -y nvidia-cuda-toolkit
+        # Проверка наличия nvcc
+        nvcc --version
 
     - name: Configure CMake
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.1/bin/nvcc
+        # В Ubuntu-latest nvcc обычно в /usr/bin/
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_CUDA_COMPILER=$(which nvcc)
 
     - name: Build Project
       run: |
@@ -32,5 +34,5 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: LinearSelector-V144-Binary
+        name: LinearSelector-V144-Protected
         path: build/LinearSelectorBenchmark
