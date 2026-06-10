@@ -6,9 +6,9 @@ on:
   workflow_dispatch: 
 
 jobs:
-  build-windows:
-    name: Build EXE (Windows + CUDA)
-    runs-on: windows-latest
+  build-linux:
+    name: Build & Test (Ubuntu + CUDA)
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout repository
@@ -18,14 +18,11 @@ jobs:
       uses: Jimver/cuda-toolkit@v0.2.21
       with:
         cuda: '12.1.0'
-        method: 'network'
 
     - name: Configure CMake
-      shell: bash
       run: |
-        export CUDA_PATH=$CUDA_PATH_V12_1
-        export PATH=$CUDA_PATH/bin:$PATH
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_CUDA_COMPILER="$CUDA_PATH/bin/nvcc.exe"
+        mkdir build
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80
 
     - name: Build Project
       run: |
@@ -34,6 +31,6 @@ jobs:
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: LinearSelector-V144-Windows-EXE
-        path: build/Release/LinearSelectorBenchmark.exe
+        name: LinearSelector-V144-Linux-Binary
+        path: build/LinearSelectorBenchmark
         retention-days: 5
