@@ -1,33 +1,36 @@
-name: Build and Secure Release
+name: Manual Build LinearSelector V144
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Добавляет кнопку ручного запуска в интерфейсе GitHub
 
 jobs:
   build-windows:
+    name: Build EXE (Windows + CUDA)
     runs-on: windows-latest
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install CUDA Toolkit
       uses: jimmy-park/install-cuda-action@v1.7
       with:
         cuda_version: '12.1.0'
+        method: 'network'
 
     - name: Configure CMake
       run: |
-        mkdir build
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80 ..
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80
 
-    - name: Build EXE
+    - name: Build Project
       run: |
-        cd build
-        cmake --build . --config Release
+        cmake --build build --config Release
 
-    - name: Upload Artifact (Download your EXE here)
-      uses: actions/upload-artifact@v3
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
       with:
-        name: LinearSelector-V144-Windows
+        name: LinearSelector-V144-Windows-EXE
         path: build/Release/LinearSelectorBenchmark.exe
+        retention-days: 5
