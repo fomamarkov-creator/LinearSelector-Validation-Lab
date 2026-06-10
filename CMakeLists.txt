@@ -1,38 +1,28 @@
 cmake_minimum_required(VERSION 3.18)
 project(LinearSelectorLab LANGUAGES CXX CUDA)
 
-# Настройки стандарта
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Настройка архитектуры CUDA (80 - для RTX 30xx/40xx, 75 - для 20xx)
+# Отключаем раздельную компиляцию для устранения ошибок nvlink на Ubuntu
+set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
+
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 80)
 endif()
 
-# Включаем максимальную оптимизацию и IPO (LTO) для защиты и скорости
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-
-# Создаем библиотеку из ядра
-add_library(LinearSelector_lib STATIC 
+# Создаем исполняемый файл напрямую из всех исходников
+add_executable(LinearSelectorBenchmark 
+    test_core.cpp 
     LinearSelector.cu 
     LinearSelector.hpp
 )
 
-# Указываем, что это CUDA-код с отдельной компиляцией
-set_target_properties(LinearSelector_lib PROPERTIES 
-    CUDA_SEPARABLE_COMPILATION ON
-    POSITION_INDEPENDENT_CODE ON
+# Добавляем необходимые системные библиотеки
+target_link_libraries(LinearSelectorBenchmark PRIVATE CUDA::cudart)
+
+# Настройка статической линковки для переносимости бинарника
+set_target_properties(LinearSelectorBenchmark PROPERTIES 
+    CUDA_RESOLVE_DEVICE_SYMBOLS ON
 )
 
-# Создаем исполняемый файл (наш стенд верификации)
-add_executable(LinearSelectorBenchmark test_core.cpp)
-
-# Связываем всё воедино
-target_link_libraries(LinearSelectorBenchmark PRIVATE LinearSelector_lib)
-
-# Настройки для Windows (чтобы EXE не требовал лишних DLL)
-if(WIN32)
-    set_target_properties(LinearSelectorBenchmark PROPERTIES 
-        MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
