@@ -48,3 +48,21 @@ benchmark_results.json
 
 # Python кэш
 __pycache__/
+# Скомпилированные файлы
+*.exe
+*.out
+*.so
+*.dll
+*.o
+*.obj
+
+# Папки сборки и кэш
+build/
+bin/
+.vs/
+.vscode/
+__pycache__/
+
+# CUDA логи
+*.log
+*.tmp
