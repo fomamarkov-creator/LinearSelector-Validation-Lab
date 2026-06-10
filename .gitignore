@@ -33,3 +33,18 @@ CMakeSettings.json
 *.log
 *.tmp
 .DS_Store
+# Сборка и бинарники
+build/
+bin/
+*.exe
+*.so
+*.o
+
+# Профилирование (NVIDIA Nsight / Google Benchmark)
+*.qdrep
+*.nsys-rep
+*.sqlite
+benchmark_results.json
+
+# Python кэш
+__pycache__/
