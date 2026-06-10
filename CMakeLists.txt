@@ -4,7 +4,10 @@ project(LinearSelectorLab LANGUAGES CXX CUDA)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Отключаем раздельную компиляцию для устранения ошибок nvlink на Ubuntu
+# Явный поиск CUDA
+find_package(CUDAToolkit REQUIRED)
+
+# Отключаем раздельную компиляцию для стабильности на Ubuntu
 set(CMAKE_CUDA_SEPARABLE_COMPILATION OFF)
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
@@ -18,11 +21,10 @@ add_executable(LinearSelectorBenchmark
     LinearSelector.hpp
 )
 
-# Добавляем необходимые системные библиотеки
+# Используем найденные библиотеки CUDAToolkit
 target_link_libraries(LinearSelectorBenchmark PRIVATE CUDA::cudart)
 
-# Настройка статической линковки для переносимости бинарника
+# Настройка для корректной линковки на Linux
 set_target_properties(LinearSelectorBenchmark PROPERTIES 
     CUDA_RESOLVE_DEVICE_SYMBOLS ON
 )
-
