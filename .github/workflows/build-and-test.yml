@@ -64,7 +64,7 @@ jobs:
         name: LinearSelector-Linux-Binary
         path: build/LinearSelectorBenchmark
 
-  # 2. Параллельная сборка Windows EXE с глубоким подавлением несовместимости STL и линковкой cuBLAS
+  # 2. Параллельная сборка Windows EXE с корректным окружением и защитой от падения STL
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-2022
@@ -72,10 +72,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # Исправлено: убран некорректный параметр toolset, окружение инициализируется в штатном режиме
     - name: Configure Developer Command Prompt for Visual Studio
       uses: ilammy/msvc-dev-cmd@v1
-      with:
-        toolset: '14.3'
 
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.16
@@ -90,7 +89,7 @@ jobs:
         nvcc --version
         mkdir build
         
-        # Добавлены флаги линковки -lcublas для успешной сборки Markov Core
+        # Полный набор защитных флагов от падения cudafe++ и для линковки cuBLAS
         nvcc -O3 -std=c++17 -arch=sm_75 -allow-unsupported-compiler `
           -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
           -Xcompiler "/D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH /std:c++17" `
@@ -104,7 +103,7 @@ jobs:
         name: LinearSelector-Windows-Binary
         path: build/LinearSelectorBenchmark.exe
 
-  # 3. Атомарная публикация релиза (Запускается только после готовности обоих файлов)
+  # 3. Атомарная публикация релиза
   publish-release:
     name: Publish Production Unified Release
     runs-on: ubuntu-latest
