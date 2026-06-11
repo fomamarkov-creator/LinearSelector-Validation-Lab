@@ -76,7 +76,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. Исправленная сборка для Windows через генератор NMake Makefiles
+  # 2. Прямая сборка Windows EXE без использования капризного CMake
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-latest
@@ -87,7 +87,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Настраиваем окружение MSVC компилятора cl.exe для сессии PowerShell
+    # Активируем встроенное окружение С++ компилятора MSVC (cl.exe), необходимое для nvcc
     - name: Configure Developer Command Prompt for Visual Studio
       uses: ilammy/msvc-dev-cmd@v1
 
@@ -103,13 +103,14 @@ jobs:
       run: |
         nvcc --version
         
-        # Используем NMake вместо тяжелого генератора VS, чтобы избежать ошибки поиска инстанса IDE
-        cmake -B build -G "NMake Makefiles" `
-          -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_CUDA_ARCHITECTURES=75 `
-          -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH/bin/nvcc.exe"
-          
-        cmake --build build --config Release
+        # Создаем выходную директорию вручную
+        mkdir build
+        
+        # Компилируем .cu и .cpp файлы напрямую одной командой nvcc под архитектуру Т4 (75)
+        nvcc -O3 -arch=sm_75 LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+        
+        # Выводим лог созданных файлов для проверки
+        ls build/
 
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
