@@ -6,7 +6,7 @@ on:
   workflow_dispatch: 
 
 jobs:
-  # 1. Сборка для Linux и обновление README
+  # 1. Сборка для Linux и подготовка README
   build-linux-and-docs:
     name: Ubuntu Build & Docs
     runs-on: ubuntu-22.04
@@ -31,7 +31,6 @@ jobs:
         # LinearSelector-Validation-Lab 🧪
 
         Математическая верификация и стресс-тестирование алгоритма линейной селекции в нерефлексивных пространствах.
-
         Этот репозиторий является независимым полигоном для тестирования технологии **LinearSelector (версия V144)**. 
 
         🎯 **Цель проекта**
@@ -52,12 +51,12 @@ jobs:
 
         📦 **Релизные артефакты (V144-Protected)**
         Последняя сборка доступна в разделе **Actions -> Artifacts**:
-        1. 🐧 **Linux Binary:** \`LinearSelectorBenchmark\` (Ubuntu 22.04)
-        2. 🪟 **Windows EXE:** \`LinearSelectorBenchmark.exe\` (x64)
+        1. 🐧 **Linux Binary:** \`LinearSelectorBenchmark\`
+        2. 🪟 **Windows EXE:** \`LinearSelectorBenchmark.exe\`
 
         🛠 **Технологический стек**
         - **Ядро:** C++ / CUDA (compute_80+)
-        - **Защита:** Markov Shield AI (Аппаратная привязка)
+        - **Защита:** Markov Shield AI
         - **Лицензия:** GNU AGPLv3
 
         *«Там, где классическая оптимизация упирается в бесконечность, мы находим прямую линию».*
@@ -77,7 +76,7 @@ jobs:
         name: LinearSelector-V144-Linux
         path: build/LinearSelectorBenchmark
 
-  # 2. ФОРСИРОВАННАЯ сборка для Windows
+  # 2. ИСПРАВЛЕННАЯ сборка для Windows (без внешних плагинов)
   build-windows:
     name: Windows EXE Build
     runs-on: windows-latest
@@ -85,27 +84,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install CUDA on Windows
-      # На windows-latest CUDA есть, но иногда её нужно "пнуть"
-      uses: jimmy-park/cuda-toolkit@v0.2.0
-      with:
-        cuda: '12.1.0' # Используем стабильную версию для оптимизаторов
-
     - name: Set up MSVC
       uses: ilammy/msvc-dev-cmd@v1
 
-    - name: Configure CMake (Windows)
+    - name: Configure and Build (Windows)
       shell: pwsh
       run: |
-        # Принудительно задаем путь к компилятору NVIDIA
+        # Используем предустановленную CUDA 12.1 (стандарт для GitHub Runners)
         $env:CUDA_PATH = $env:CUDA_PATH_V12_1
         $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
+        
+        Write-Host "Используем CUDA из: $env:CUDA_PATH"
+        
         cmake -B build -G "Visual Studio 17 2022" -A x64 `
           -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe" `
-          -DCMAKE_CUDA_ARCHITECTURES=80
-
-    - name: Build Project (Windows)
-      run: |
+          -DCMAKE_CUDA_ARCHITECTURES=80 `
+          -DCMAKE_BUILD_TYPE=Release
+          
         cmake --build build --config Release
 
     - name: Upload Windows EXE
