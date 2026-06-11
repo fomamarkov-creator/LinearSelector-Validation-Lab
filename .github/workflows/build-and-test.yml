@@ -76,7 +76,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. Прямая сборка Windows EXE с обходом проверки версии компилятора
+  # 2. Прямая сборка Windows EXE с обновленной версией CUDA для обхода бага cudafe++
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-latest
@@ -91,10 +91,11 @@ jobs:
     - name: Configure Developer Command Prompt for Visual Studio
       uses: ilammy/msvc-dev-cmd@v1
 
+    # Обновляем версию до 12.4.1 для нативной совместимости с новым MSVC на windows-latest
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.16
       with:
-        cuda: '12.1.1'
+        cuda: '12.4.1'
         method: 'network'
         sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev"]'
 
@@ -103,8 +104,8 @@ jobs:
       run: |
         nvcc --version
         mkdir build
-        # Ключевой флаг -allow-unsupported-compiler заставит nvcc проигнорировать новизну VS2022
-        nvcc -O3 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+        # Компиляция с флагами оптимизации под Tesla T4 (sm_75)
+        nvcc -O3 -arch=sm_75 LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
         ls build/
 
     - name: Upload Windows Artifact
@@ -113,10 +114,11 @@ jobs:
         name: LinearSelector-V144-Windows-EXE
         path: build/LinearSelectorBenchmark.exe
 
+    # Исправлен путь к файлу сборки (удалена несуществующая папка Release/)
     - name: Add Windows EXE to Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v1.4.4-secure
-        files: build/Release/LinearSelectorBenchmark.exe
+        files: build/LinearSelectorBenchmark.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
