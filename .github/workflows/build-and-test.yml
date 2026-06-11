@@ -6,7 +6,7 @@ on:
   workflow_dispatch: 
 
 jobs:
-  # 1. Сборка для Linux (Tesla T4), подготовка README и выпуск Релиза
+  # 1. Сборка для Linux (Tesla T4) и обновление README
   build-linux-and-docs:
     name: Ubuntu Build & Production Docs (Tesla T4)
     runs-on: ubuntu-22.04
@@ -61,37 +61,20 @@ jobs:
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: LinearSelector-V144-Linux-T4
+        name: LinearSelector-Linux-Binary
         path: build/LinearSelectorBenchmark
 
-    - name: Release Linux Binary
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: v1.4.4-secure
-        name: Release V144-SECURE
-        files: build/LinearSelectorBenchmark
-        body: |
-          Автоматическая сборка для валидации проекта.
-          Сборка оптимизирована под архитектуру CUDA: SM_75 (NVIDIA Tesla T4).
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # 2. Прямая сборка Windows EXE с обновленной версией CUDA для обхода бага cudafe++
+  # 2. Параллельная сборка Windows EXE с флагом обхода проверки MSVC
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-latest
-    needs: build-linux-and-docs
-    permissions:
-      contents: write
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Активируем встроенное окружение компилятора MSVC (cl.exe), необходимое для nvcc
     - name: Configure Developer Command Prompt for Visual Studio
       uses: ilammy/msvc-dev-cmd@v1
 
-    # Обновляем версию до 12.4.1 для нативной совместимости с новым MSVC на windows-latest
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.16
       with:
@@ -104,21 +87,54 @@ jobs:
       run: |
         nvcc --version
         mkdir build
-        # Компиляция с флагами оптимизации под Tesla T4 (sm_75)
-        nvcc -O3 -arch=sm_75 LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+        # Добавлен флаг -allow-unsupported-compiler для подавления ошибки C1189
+        nvcc -O3 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
         ls build/
 
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: LinearSelector-V144-Windows-EXE
+        name: LinearSelector-Windows-Binary
         path: build/LinearSelectorBenchmark.exe
 
-    # Исправлен путь к файлу сборки (удалена несуществующая папка Release/)
-    - name: Add Windows EXE to Release
+  # 3. Атомарная публикация релиза (Запускается только после готовности обоих файлов)
+  publish-release:
+    name: Publish Production Unified Release
+    runs-on: ubuntu-latest
+    needs: [build-linux-and-docs, build-windows]
+    permissions:
+      contents: write
+    steps:
+    - name: Create Release Workspace
+      run: mkdir release-assets
+
+    - name: Download Linux Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: LinearSelector-Linux-Binary
+        path: release-assets/
+
+    - name: Download Windows Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: LinearSelector-Windows-Binary
+        path: release-assets/
+
+    - name: Rename Linux Binary for Clarity
+      run: mv release-assets/LinearSelectorBenchmark release-assets/LinearSelectorBenchmark-Linux
+
+    - name: Publish Unified Release to GitHub
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v1.4.4-secure
-        files: build/LinearSelectorBenchmark.exe
+        name: Release V144-SECURE
+        files: |
+          release-assets/LinearSelectorBenchmark-Linux
+          release-assets/LinearSelectorBenchmark.exe
+        body: |
+          Автоматическая сборка для валидации проекта.
+          Сборка оптимизирована под архитектуру CUDA: SM_75 (NVIDIA Tesla T4).
+          
+          Доступны официальные бинарники для платформ: Linux и Windows.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
