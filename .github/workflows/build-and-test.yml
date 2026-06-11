@@ -64,16 +64,20 @@ jobs:
         name: LinearSelector-Linux-Binary
         path: build/LinearSelectorBenchmark
 
-  # 2. Параллельная сборка Windows EXE с понижением стандарта C++
+  # 2. Параллельная сборка Windows EXE на изолированном стабильном окружении
   build-windows:
     name: Windows EXE Build (Tesla T4)
-    runs-on: windows-latest
+    # ЖЕСТКО фиксируем окружение, избегая непредвиденных обновлений MSVC
+    runs-on: windows-2022
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # Активируем стабильную версию инструментов сборки v143 без багов в заголовочных файлах
     - name: Configure Developer Command Prompt for Visual Studio
       uses: ilammy/msvc-dev-cmd@v1
+      with:
+        toolset: '14.3'
 
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.16
@@ -87,8 +91,8 @@ jobs:
       run: |
         nvcc --version
         mkdir build
-        # Добавлен флаг -std=c++17 для защиты парсера cudafe++ от падения
-        nvcc -O3 -std=c++17 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+        # Используем проверенную ручную сборку, игнорируя предупреждения версий компилятора хоста
+        nvcc -O3 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
         ls build/
 
     - name: Upload Windows Artifact
