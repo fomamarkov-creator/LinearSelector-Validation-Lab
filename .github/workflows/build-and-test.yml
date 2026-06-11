@@ -6,7 +6,7 @@ on:
   workflow_dispatch: 
 
 jobs:
-  # 1. Сборка для Linux и подготовка README с таблицей
+  # 1. Сборка для Linux и обновление README
   build-linux-and-docs:
     name: Ubuntu Build & Docs
     runs-on: ubuntu-22.04
@@ -77,7 +77,7 @@ jobs:
         name: LinearSelector-V144-Linux
         path: build/LinearSelectorBenchmark
 
-  # 2. Исправленная сборка для Windows с поиском компилятора
+  # 2. ФОРСИРОВАННАЯ сборка для Windows
   build-windows:
     name: Windows EXE Build
     runs-on: windows-latest
@@ -85,13 +85,24 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up MSVC Developer Command Prompt
-      # Этот шаг принудительно включает инструменты Visual Studio
+    - name: Install CUDA on Windows
+      # На windows-latest CUDA есть, но иногда её нужно "пнуть"
+      uses: jimmy-park/cuda-toolkit@v0.2.0
+      with:
+        cuda: '12.1.0' # Используем стабильную версию для оптимизаторов
+
+    - name: Set up MSVC
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: Configure CMake (Windows)
+      shell: pwsh
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80
+        # Принудительно задаем путь к компилятору NVIDIA
+        $env:CUDA_PATH = $env:CUDA_PATH_V12_1
+        $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
+        cmake -B build -G "Visual Studio 17 2022" -A x64 `
+          -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe" `
+          -DCMAKE_CUDA_ARCHITECTURES=80
 
     - name: Build Project (Windows)
       run: |
