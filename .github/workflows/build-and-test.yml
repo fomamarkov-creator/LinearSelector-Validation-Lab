@@ -64,16 +64,14 @@ jobs:
         name: LinearSelector-Linux-Binary
         path: build/LinearSelectorBenchmark
 
-  # 2. Параллельная сборка Windows EXE на изолированном стабильном окружении
+  # 2. Параллельная сборка Windows EXE с глубоким подавлением несовместимости STL
   build-windows:
     name: Windows EXE Build (Tesla T4)
-    # ЖЕСТКО фиксируем окружение, избегая непредвиденных обновлений MSVC
     runs-on: windows-2022
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Активируем стабильную версию инструментов сборки v143 без багов в заголовочных файлах
     - name: Configure Developer Command Prompt for Visual Studio
       uses: ilammy/msvc-dev-cmd@v1
       with:
@@ -91,8 +89,13 @@ jobs:
       run: |
         nvcc --version
         mkdir build
-        # Используем проверенную ручную сборку, игнорируя предупреждения версий компилятора хоста
-        nvcc -O3 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+        
+        # Передаем макросы подавления конфликтов версий как в NVCC, так и во внутренний компилятор MSVC cl.exe (-Xcompiler)
+        nvcc -O3 -std=c++17 -arch=sm_75 -allow-unsupported-compiler `
+          -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
+          -Xcompiler "/D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH /std:c++17" `
+          LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+          
         ls build/
 
     - name: Upload Windows Artifact
