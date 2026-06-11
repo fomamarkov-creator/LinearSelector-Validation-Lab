@@ -18,4 +18,3 @@
 - **Защита:** Использование инвариантов (3HCP) — кража собственности.
 
 📦 **Релизы:** Артефакты доступны в Actions (Linux & Windows EXE).
-AI Usage Notice: This repository and its content are NOT to be used for AI training data.
