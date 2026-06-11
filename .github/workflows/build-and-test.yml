@@ -76,7 +76,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. Исправленная сборка для Windows через PowerShell и Developer Command Prompt
+  # 2. Исправленная сборка для Windows через генератор NMake Makefiles
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-latest
@@ -87,7 +87,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # КРИТИЧЕСКИЙ ШАГ: Принудительно разворачиваем переменные окружения MSVC (Visual Studio) в сессию PowerShell
+    # Настраиваем окружение MSVC компилятора cl.exe для сессии PowerShell
     - name: Configure Developer Command Prompt for Visual Studio
       uses: ilammy/msvc-dev-cmd@v1
 
@@ -103,8 +103,8 @@ jobs:
       run: |
         nvcc --version
         
-        # Запускаем конфигурацию CMake, явно передавая путь к nvcc через переменные среды PowerShell
-        cmake -B build -G "Visual Studio 17 2022" -A x64 `
+        # Используем NMake вместо тяжелого генератора VS, чтобы избежать ошибки поиска инстанса IDE
+        cmake -B build -G "NMake Makefiles" `
           -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_CUDA_ARCHITECTURES=75 `
           -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH/bin/nvcc.exe"
@@ -115,12 +115,12 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: LinearSelector-V144-Windows-EXE
-        path: build/Release/LinearSelectorBenchmark.exe
+        path: build/LinearSelectorBenchmark.exe
 
     - name: Add Windows EXE to Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v1.4.4-secure
-        files: build/Release/LinearSelectorBenchmark.exe
+        files: build/LinearSelectorBenchmark.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
