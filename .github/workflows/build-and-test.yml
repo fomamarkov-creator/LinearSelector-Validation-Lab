@@ -64,7 +64,7 @@ jobs:
         name: LinearSelector-Linux-Binary
         path: build/LinearSelectorBenchmark
 
-  # 2. Параллельная сборка Windows EXE с флагом обхода проверки MSVC
+  # 2. Параллельная сборка Windows EXE с понижением стандарта C++
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-latest
@@ -87,8 +87,8 @@ jobs:
       run: |
         nvcc --version
         mkdir build
-        # Добавлен флаг -allow-unsupported-compiler для подавления ошибки C1189
-        nvcc -O3 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+        # Добавлен флаг -std=c++17 для защиты парсера cudafe++ от падения
+        nvcc -O3 -std=c++17 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
         ls build/
 
     - name: Upload Windows Artifact
