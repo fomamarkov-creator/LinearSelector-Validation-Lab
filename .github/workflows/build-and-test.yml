@@ -1,7 +1,7 @@
 name: Production Release & Validation V144
 
 on:
-  with:
+  push:
     branches: [ main ]
   workflow_dispatch: 
 
@@ -102,14 +102,9 @@ jobs:
       shell: pwsh
       run: |
         nvcc --version
-        
-        # Создаем выходную директорию вручную
         mkdir build
-        
-        # Добавлен критический флаг -allow-unsupported-compiler для игнорирования обновлений VS2022
+        # Ключевой флаг -allow-unsupported-compiler заставит nvcc проигнорировать новизну VS2022
         nvcc -O3 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
-        
-        # Проверяем успешность создания файла
         ls build/
 
     - name: Upload Windows Artifact
@@ -122,6 +117,6 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v1.4.4-secure
-        files: build/LinearSelectorBenchmark.exe
+        files: build/Release/LinearSelectorBenchmark.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
