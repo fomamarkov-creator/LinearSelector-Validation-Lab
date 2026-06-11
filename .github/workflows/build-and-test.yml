@@ -31,35 +31,24 @@ jobs:
         # LinearSelector-Validation-Lab 🧪
 
         Математическая верификация и стресс-тестирование алгоритма линейной селекции в нерефлексивных пространствах.
-        Этот репозиторий является независимым полигоном для тестирования технологии **LinearSelector (версия V144)**. 
 
         🎯 **Цель проекта**
         Подтвердить превосходство алгоритма над стандартными методами оптимизации NVIDIA (Baseline).
 
         📊 **Сравнительный анализ производительности (Benchmark)**
-        > [!NOTE]
-        > Данные получены в ходе валидации на аппаратном ускорителе NVIDIA Tesla T4 (Google Colab).
 
         | Метрика | Стандарт (NVIDIA Baseline) | LinearSelector V144 | Превосходство |
         | :--- | :--- | :--- | :--- |
         | **Скорость вычислений** | [Впишите ms] | **[Впишите ms]** | **[?]%** |
         | **Пропускная способность** | [Впишите GB/s] | **[Впишите GB/s]** | **[?]%** |
-        | **Энергоэффективность** | Standard | **Ultra-Low** | **Optimized** |
-        | **Стабильность (L-норма)** | Деградирует | **Стабильна** | **Absolute** |
-
-        ---
 
         📦 **Релизные артефакты (V144-Protected)**
-        Последняя сборка доступна в разделе **Actions -> Artifacts**:
         1. 🐧 **Linux Binary:** \`LinearSelectorBenchmark\`
         2. 🪟 **Windows EXE:** \`LinearSelectorBenchmark.exe\`
 
         🛠 **Технологический стек**
         - **Ядро:** C++ / CUDA (compute_80+)
         - **Защита:** Markov Shield AI
-        - **Лицензия:** GNU AGPLv3
-
-        *«Там, где классическая оптимизация упирается в бесконечность, мы находим прямую линию».*
         EOF
 
     - name: Commit and Push README
@@ -67,7 +56,7 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action Bot"
         git add README.md
-        git commit -m "📊 Prepare README for Colab results [skip ci]" || echo "No changes"
+        git commit -m "📊 Prepare README [skip ci]" || echo "No changes"
         git push
 
     - name: Upload Linux Artifact
@@ -76,7 +65,7 @@ jobs:
         name: LinearSelector-V144-Linux
         path: build/LinearSelectorBenchmark
 
-  # 2. ИСПРАВЛЕННАЯ сборка для Windows (без внешних плагинов)
+  # 2. МАКСИМАЛЬНО НАДЕЖНАЯ сборка для Windows через Ninja
   build-windows:
     name: Windows EXE Build
     runs-on: windows-latest
@@ -84,22 +73,24 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up MSVC
+    - name: Set up MSVC Developer Command Prompt
       uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install Ninja
+      run: choco install ninja
 
     - name: Configure and Build (Windows)
       shell: pwsh
       run: |
-        # Используем предустановленную CUDA 12.1 (стандарт для GitHub Runners)
+        # Подхватываем CUDA 12.1
         $env:CUDA_PATH = $env:CUDA_PATH_V12_1
         $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
         
-        Write-Host "Используем CUDA из: $env:CUDA_PATH"
-        
-        cmake -B build -G "Visual Studio 17 2022" -A x64 `
+        # Используем Ninja вместо тяжелой Visual Studio, чтобы избежать ошибок "Instance не найден"
+        cmake -B build -G "Ninja" `
+          -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe" `
-          -DCMAKE_CUDA_ARCHITECTURES=80 `
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CUDA_ARCHITECTURES=80
           
         cmake --build build --config Release
 
@@ -107,4 +98,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: LinearSelector-V144-Windows-EXE
-        path: build/Release/LinearSelectorBenchmark.exe
+        path: build/LinearSelectorBenchmark.exe
