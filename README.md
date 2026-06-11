@@ -16,7 +16,7 @@
 | **Точность (L-норма)** | Деградирует | **Стабильна** | Absolute |
 
 ### График сравнения производительности
-![Performance Comparison Chart](PERFORMANCE_CHART.png)
+![Performance Comparison Chart](PERFORMANCE_CHART.PNG)
 
 ---
 
