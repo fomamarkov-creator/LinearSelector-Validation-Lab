@@ -6,12 +6,12 @@ on:
   workflow_dispatch: 
 
 jobs:
-  # 1. Сборка для Linux, подготовка README и выпуск Релиза
+  # 1. Сборка для Linux (Tesla T4), подготовка README и выпуск Релиза
   build-linux-and-docs:
-    name: Ubuntu Build & Production Docs
+    name: Ubuntu Build & Production Docs (Tesla T4)
     runs-on: ubuntu-22.04
     permissions:
-      contents: write # Ключевой параметр для создания релизов и пуша README
+      contents: write
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -22,7 +22,8 @@ jobs:
 
     - name: Build Project
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=80
+        # Архитектура 75 компилирует бинарник под GPU Tesla T4 (Google Colab)
+        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=75
         cmake --build build --config Release
 
     - name: Generate Secure README
@@ -47,7 +48,7 @@ jobs:
         - **Коммерческое использование:** Только по платной Лицензии.
         - **Защита:** Использование инвариантов (3HCP) — кража собственности.
 
-        📦 **Релизы:** Артефакты доступны в Actions (Linux & Windows EXE).
+        📦 **Релизы:** Артефакты доступны в Actions и Releases (Linux T4 & Windows EXE).
         EOF
 
     - name: Commit and Push README
@@ -61,10 +62,9 @@ jobs:
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: LinearSelector-V144-Linux
+        name: LinearSelector-V144-Linux-T4
         path: build/LinearSelectorBenchmark
 
-    # НОВЫЙ ШАГ: Автоматическая публикация исполняемого файла в публичный релиз
     - name: Release Linux Binary
       uses: softprops/action-gh-release@v2
       with:
@@ -72,36 +72,59 @@ jobs:
         name: Release V144-SECURE
         files: build/LinearSelectorBenchmark
         body: |
-          Автоматическая сборка для валидации в Google Colab.
-          Архитектура CUDA: SM_80
+          Автоматическая сборка для валидации проекта.
+          Сборка оптимизирована под архитектуру CUDA: SM_75 (NVIDIA Tesla T4).
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. Сборка для Windows
+  # 2. Исправленная сборка для Windows (Tesla T4) с интеграцией MSVC и CUDA
   build-windows:
-    name: Windows EXE Build
+    name: Windows EXE Build (Tesla T4)
     runs-on: windows-latest
+    needs: build-linux-and-docs # Ждем публикации релиза, чтобы добавить туда exe
+    permissions:
+      contents: write
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # Подключаем инструменты сборки Microsoft (C++ компилятор cl.exe)
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    # Устанавливаем CUDA с интеграцией для компилятора Visual Studio
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.16
       with:
         cuda: '12.1.1'
         method: 'network'
+        sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "visual_studio_integration"]'
 
     - name: Configure and Build (Windows)
       shell: pwsh
       run: |
+        echo "CUDA_PATH: $env:CUDA_PATH"
         nvcc --version
+        
+        # Настройка CMake: принудительно связываем пути и задаем архитектуру 75
         cmake -B build -G "Visual Studio 17 2022" -A x64 `
           -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_CUDA_ARCHITECTURES=80
+          -DCMAKE_CUDA_ARCHITECTURES=75 `
+          -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH/bin/nvcc.exe"
+          
         cmake --build build --config Release
 
-    - name: Upload Windows EXE
+    - name: Upload Windows Artifact
       uses: actions/upload-artifact@v4
       with:
         name: LinearSelector-V144-Windows-EXE
         path: build/Release/LinearSelectorBenchmark.exe
+
+    # Добавляем скомпилированный EXE в текущий релиз к Linux-версии
+    - name: Add Windows EXE to Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v1.4.4-secure
+        files: build/Release/LinearSelectorBenchmark.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
