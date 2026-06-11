@@ -1,7 +1,7 @@
 name: Production Release & Validation V144
 
 on:
-  push:
+  with:
     branches: [ main ]
   workflow_dispatch: 
 
@@ -76,7 +76,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. Прямая сборка Windows EXE без использования капризного CMake
+  # 2. Прямая сборка Windows EXE с обходом проверки версии компилятора
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-latest
@@ -87,7 +87,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Активируем встроенное окружение С++ компилятора MSVC (cl.exe), необходимое для nvcc
+    # Активируем встроенное окружение компилятора MSVC (cl.exe), необходимое для nvcc
     - name: Configure Developer Command Prompt for Visual Studio
       uses: ilammy/msvc-dev-cmd@v1
 
@@ -106,10 +106,10 @@ jobs:
         # Создаем выходную директорию вручную
         mkdir build
         
-        # Компилируем .cu и .cpp файлы напрямую одной командой nvcc под архитектуру Т4 (75)
-        nvcc -O3 -arch=sm_75 LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+        # Добавлен критический флаг -allow-unsupported-compiler для игнорирования обновлений VS2022
+        nvcc -O3 -arch=sm_75 -allow-unsupported-compiler LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
         
-        # Выводим лог созданных файлов для проверки
+        # Проверяем успешность создания файла
         ls build/
 
     - name: Upload Windows Artifact
