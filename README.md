@@ -1,7 +1,6 @@
 # LinearSelector-Validation-Lab 🧪
 
 Математическая верификация и стресс-тестирование алгоритма линейной селекции в нерефлексивных пространствах.
-
 Этот репозиторий является независимым полигоном для тестирования технологии **LinearSelector (версия V144)**. 
 
 🎯 **Цель проекта**
@@ -22,12 +21,12 @@
 
 📦 **Релизные артефакты (V144-Protected)**
 Последняя сборка доступна в разделе **Actions -> Artifacts**:
-1. 🐧 **Linux Binary:** `LinearSelectorBenchmark` (Ubuntu 22.04)
-2. 🪟 **Windows EXE:** `LinearSelectorBenchmark.exe` (x64)
+1. 🐧 **Linux Binary:** `LinearSelectorBenchmark`
+2. 🪟 **Windows EXE:** `LinearSelectorBenchmark.exe`
 
 🛠 **Технологический стек**
 - **Ядро:** C++ / CUDA (compute_80+)
-- **Защита:** Markov Shield AI (Аппаратная привязка)
+- **Защита:** Markov Shield AI
 - **Лицензия:** GNU AGPLv3
 
 *«Там, где классическая оптимизация упирается в бесконечность, мы находим прямую линию».*
