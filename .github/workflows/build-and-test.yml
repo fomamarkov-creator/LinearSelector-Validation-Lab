@@ -6,7 +6,7 @@ on:
   workflow_dispatch: 
 
 jobs:
-  # 1. Сборка для Linux (Tesla T4), подготовка README и выпуск Релиза
+  # 1. Сборка для Linux (Tesla T4) и выпуск Релиза
   build-linux-and-docs:
     name: Ubuntu Build & Production Docs (Tesla T4)
     runs-on: ubuntu-22.04
@@ -22,7 +22,6 @@ jobs:
 
     - name: Build Project
       run: |
-        # Архитектура 75 компилирует бинарник под GPU Tesla T4 (Google Colab)
         cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=75
         cmake --build build --config Release
 
@@ -77,41 +76,38 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # 2. Исправленная сборка для Windows (Tesla T4) с интеграцией MSVC и CUDA
+  # 2. Исправленная сборка для Windows через MSBuild с интеграцией путей VS
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-latest
-    needs: build-linux-and-docs # Ждем публикации релиза, чтобы добавить туда exe
+    needs: build-linux-and-docs
     permissions:
       contents: write
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Подключаем инструменты сборки Microsoft (C++ компилятор cl.exe)
-    - name: Add MSBuild to PATH
+    # Официальный экшен GitHub для интеграции и поиска установленной Visual Studio 2022
+    - name: Microsoft Visual Studio Locator
       uses: microsoft/setup-msbuild@v2
 
-    # Устанавливаем CUDA с интеграцией для компилятора Visual Studio
     - name: Install CUDA Toolkit
       uses: Jimver/cuda-toolkit@v0.2.16
       with:
         cuda: '12.1.1'
         method: 'network'
+        # Заставляем установщик скопировать файлы сборки внутрь MSBuild/Visual Studio
         sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "visual_studio_integration"]'
 
     - name: Configure and Build (Windows)
-      shell: pwsh
+      shell: cmd # Переключаемся на стандартную CMD-консоль для полной совместимости с переменными Visual Studio
       run: |
-        echo "CUDA_PATH: $env:CUDA_PATH"
         nvcc --version
         
-        # Настройка CMake: принудительно связываем пути и задаем архитектуру 75
-        cmake -B build -G "Visual Studio 17 2022" -A x64 `
-          -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_CUDA_ARCHITECTURES=75 `
-          -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH/bin/nvcc.exe"
-          
+        # Генерируем проект под Visual Studio, жестко прописав путь к компилятору nvcc через CUDA_PATH
+        cmake -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=75 -DCMAKE_CUDA_COMPILER="%CUDA_PATH%\bin\nvcc.exe"
+        
+        # Собираем готовый .exe файл
         cmake --build build --config Release
 
     - name: Upload Windows Artifact
@@ -120,7 +116,6 @@ jobs:
         name: LinearSelector-V144-Windows-EXE
         path: build/Release/LinearSelectorBenchmark.exe
 
-    # Добавляем скомпилированный EXE в текущий релиз к Linux-версии
     - name: Add Windows EXE to Release
       uses: softprops/action-gh-release@v2
       with:
