@@ -64,7 +64,7 @@ jobs:
         name: LinearSelector-Linux-Binary
         path: build/LinearSelectorBenchmark
 
-  # 2. Параллельная сборка Windows EXE с глубоким подавлением несовместимости STL
+  # 2. Параллельная сборка Windows EXE с глубоким подавлением несовместимости STL и линковкой cuBLAS
   build-windows:
     name: Windows EXE Build (Tesla T4)
     runs-on: windows-2022
@@ -90,11 +90,11 @@ jobs:
         nvcc --version
         mkdir build
         
-        # Передаем макросы подавления конфликтов версий как в NVCC, так и во внутренний компилятор MSVC cl.exe (-Xcompiler)
+        # Добавлены флаги линковки -lcublas для успешной сборки Markov Core
         nvcc -O3 -std=c++17 -arch=sm_75 -allow-unsupported-compiler `
           -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
           -Xcompiler "/D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH /std:c++17" `
-          LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
+          -lcublas LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
           
         ls build/
 
