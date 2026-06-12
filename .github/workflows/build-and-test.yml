@@ -21,7 +21,7 @@ jobs:
         with:
           cuda: '11.8.0'
           method: 'network'
-          # Ограничиваем установку только нужными компонентами для ускорения
+          # Оставляем полный набор, чтобы не пропустить важные библиотеки
           sub-packages: '["nvcc", "cudart", "visual_studio_integration"]'
 
       - name: Set up Python
@@ -33,8 +33,12 @@ jobs:
         run: pip install torch safetensors huggingface_hub numpy pyinstaller
 
       - name: Configure CMake
-        # Передаем путь к установленному компилятору NVCC
+        shell: pwsh
         run: |
+          # Принудительно задаем пути к CUDA для CMake
+          $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
+          $env:PATH = "$env:CUDA_PATH\bin;$env:CUDA_PATH\libnvvp;$env:PATH"
+          
           cmake -S . -B build `
           -DCMAKE_CUDA_ARCHITECTURES=75 `
           -DCMAKE_CUDA_COMPILER="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8/bin/nvcc.exe"
