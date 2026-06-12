@@ -1,4 +1,4 @@
-name: V-CORE EXE BUILDER (OFFLINE READY)
+name: V-CORE EXE RELEASE BUILDER
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 
 jobs:
   build:
-    # Переключаемся на Windows для создания .exe
     runs-on: windows-latest
 
     steps:
@@ -18,43 +17,34 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install Build Dependencies
+    - name: Install AI Tools
       run: |
         pip install torch safetensors huggingface_hub numpy pyinstaller
 
-    - name: Install CUDA Toolkit
-      # На Windows-серверах GitHub CUDA уже часто предустановлена, проверим её
-      run: |
-        nvcc --version
-
     - name: Configure CMake
-      run: |
-        cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=75
+      run: cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=75
 
-    - name: Build V144 Core
+    - name: Build C++ Core
       run: cmake --build build --config Release
 
-    - name: Run Qwen Optimization (Generate Weights)
+    - name: Run Optimization
       run: |
-        cp bridge_compressor.py build/
-        cd build
+        cp bridge_compressor.py build/Release/
+        cd build/Release
         python bridge_compressor.py
 
-    - name: Bundle into One-File EXE
+    - name: Create Autonomous EXE
       run: |
-        # Собираем Python-мостик и CUDA-бинарник в один файл
-        pyinstaller --onefile --add-binary "build/Release/LinearSelectorBenchmark.exe;." --name "Markov_Shield_AI_v144" build/bridge_compressor.py
+        # Собираем всё в один файл для оффлайн запуска на Asus
+        pyinstaller --onefile --add-binary "build/Release/LinearSelectorBenchmark.exe;." --name "Markov_Shield_v144" build/Release/bridge_compressor.py
 
-    - name: Create GitHub Release
+    - name: Publish Clean Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v144-exabit-final
         name: "Markov Shield AI v144 (Exabit EXE)"
-        draft: false
-        prerelease: false
-        # Загружаем только EXE и сжатые веса, НИКАКИХ zip/gz
         files: |
-          dist/Markov_Shield_AI_v144.exe
-          build/v144_model.safetensors
+          dist/Markov_Shield_v144.exe
+          build/Release/v144_model.safetensors
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
