@@ -1,146 +1,53 @@
-name: Production Release & Validation V144
+name: V-CORE QWEN OPTIMIZER
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch: 
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  # 1. Сборка для Linux (Tesla T4) и обновление README
-  build-linux-and-docs:
-    name: Ubuntu Build & Production Docs (Tesla T4)
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
+  build:
+    # Используем стандартный сервер, CUDA установим вручную
+    runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Install CUDA (Linux)
-      run: |
-        sudo apt-get update && sudo apt-get install -y nvidia-cuda-toolkit
-
-    - name: Build Project
-      run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=75
-        cmake --build build --config Release
-
-    - name: Generate Secure README
-      run: |
-        cat <<EOF > README.md
-        # LinearSelector-Validation-Lab 🧪 (V144-SECURE)
-
-        Математическая верификация алгоритма линейной селекции в нерефлексивных пространствах. Оптимизация на базе **Матрицы 3HCP** и **Резонанса 1.024**.
-
-        🎯 **Цель проекта**
-        Математическое доказательство превосходства над стандартными методами NVIDIA.
-
-        📊 **Результаты валидации (Tesla T4 GPU)**
-
-        | Метрика | Baseline (Standard) | LinearSelector V144 | Превосходство |
-        | :--- | :--- | :--- | :--- |
-        | **Скорость (ms)** | [Впишите] | **[Впишите]** | **🔥 Optimized** |
-        | **Точность (L-норма)** | Деградирует | **Стабильна** | **Absolute** |
-
-        🛡 **ЛИЦЕНЗИЯ MARKOV SHIELD AI**
-        - **Академическое использование:** Требует согласия Автора.
-        - **Коммерческое использование:** Только по платной Лицензии.
-        - **Защита:** Использование инвариантов (3HCP) — кража собственности.
-
-        📦 **Релизы:** Артефакты доступны в Actions и Releases (Linux T4 & Windows EXE).
-        EOF
-
-    - name: Commit and Push README
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action Bot"
-        git add README.md
-        git commit -m "📊 Production README updated [skip ci]" || echo "No changes"
-        git push
-
-    - name: Upload Linux Artifact
-      uses: actions/upload-artifact@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
       with:
-        name: LinearSelector-Linux-Binary
-        path: build/LinearSelectorBenchmark
+        python-version: '3.10'
 
-  # 2. Параллельная сборка Windows EXE с корректным окружением и защитой от падения STL
-  build-windows:
-    name: Windows EXE Build (Tesla T4)
-    runs-on: windows-2022
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Исправлено: убран некорректный параметр toolset, окружение инициализируется в штатном режиме
-    - name: Configure Developer Command Prompt for Visual Studio
-      uses: ilammy/msvc-dev-cmd@v1
+    - name: Install AI Dependencies
+      run: |
+        pip install torch safetensors huggingface_hub numpy
 
     - name: Install CUDA Toolkit
-      uses: Jimver/cuda-toolkit@v0.2.16
-      with:
-        cuda: '12.4.1'
-        method: 'network'
-        sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev"]'
-
-    - name: Configure and Build (Windows)
-      shell: pwsh
       run: |
-        nvcc --version
-        mkdir build
-        
-        # Полный набор защитных флагов от падения cudafe++ и для линковки cuBLAS
-        nvcc -O3 -std=c++17 -arch=sm_75 -allow-unsupported-compiler `
-          -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
-          -Xcompiler "/D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH /std:c++17" `
-          -lcublas LinearSelector.cu test_core.cpp -o build/LinearSelectorBenchmark.exe
-          
-        ls build/
+        # Установка CUDA 12.1 для компиляции LinearSelector.cu
+        wget https://nvidia.com
+        sudo dpkg -i cuda-keyring_1.1-1_all.deb
+        sudo apt-get update
+        sudo apt-get -y install cuda-toolkit-12-1
 
-    - name: Upload Windows Artifact
+    - name: Configure CMake
+      run: |
+        export PATH=/usr/local/cuda-12.1/bin${PATH:+:${PATH}}
+        cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=75
+
+    - name: Build V144 Core
+      run: cmake --build build --config Release
+
+    - name: Run Qwen Optimization
+      run: |
+        # Копируем скрипт в папку с бинарником и запускаем
+        cp bridge_compressor.py build/
+        cd build
+        chmod +x LinearSelectorBenchmark
+        python bridge_compressor.py
+
+    - name: Upload Optimized Model
       uses: actions/upload-artifact@v4
       with:
-        name: LinearSelector-Windows-Binary
-        path: build/LinearSelectorBenchmark.exe
-
-  # 3. Атомарная публикация релиза
-  publish-release:
-    name: Publish Production Unified Release
-    runs-on: ubuntu-latest
-    needs: [build-linux-and-docs, build-windows]
-    permissions:
-      contents: write
-    steps:
-    - name: Create Release Workspace
-      run: mkdir release-assets
-
-    - name: Download Linux Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: LinearSelector-Linux-Binary
-        path: release-assets/
-
-    - name: Download Windows Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: LinearSelector-Windows-Binary
-        path: release-assets/
-
-    - name: Rename Linux Binary for Clarity
-      run: mv release-assets/LinearSelectorBenchmark release-assets/LinearSelectorBenchmark-Linux
-
-    - name: Publish Unified Release to GitHub
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: v1.4.4-secure
-        name: Release V144-SECURE
-        files: |
-          release-assets/LinearSelectorBenchmark-Linux
-          release-assets/LinearSelectorBenchmark.exe
-        body: |
-          Автоматическая сборка для валидации проекта.
-          Сборка оптимизирована под архитектуру CUDA: SM_75 (NVIDIA Tesla T4).
-          
-          Доступны официальные бинарники для платформ: Linux и Windows.
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: v144-qwen-coder
+        path: build/v144_*.safetensors
