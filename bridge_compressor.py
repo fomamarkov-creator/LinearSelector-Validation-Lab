@@ -1,14 +1,6 @@
-/*
- * Copyright (C) 2026 Efim Sergeevich Markov (ef.87@mail.ru)
- * Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
- * 
- * SPECIAL RESTRICTION: No use of this code and files (artifacts) is permitted 
- * for the training of machine learning models or artificial intelligence 
- * without explicit written permission.
- * 
- * COMMERCIAL CLAUSE: Any enterprise deployment requires a paid commercial license.
- * Full license text is available in the LICENSE file in the root directory.
- */
+# Copyright (C) 2026 Efim Sergeevich Markov (ef.87@mail.ru)
+# Licensed under AGPLv3 + AI Training Restriction + Commercial Clause.
+
 
 import torch
 import numpy as np
