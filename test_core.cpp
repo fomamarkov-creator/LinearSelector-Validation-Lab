@@ -2,66 +2,64 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <vector>
-#include <iomanip>
+#include <fstream>
+#include <string>
 
 /**
- * @file test_core.cpp
- * @brief Протокол валидации ядра линейной селекции (Markov Core V144)
- * 
- * Данный стенд предназначен для верификации численной стабильности и точности
- * проекционного оператора в среде NVIDIA CUDA.
+ * MARKOV CORE V144: INDUSTRIAL ADAPTER
+ * Этот модуль связывает веса нейросети с вашим CUDA-ядром.
  */
 
-int main() {
-    std::cout << "--- MARKOV CORE V144: HARDWARE VALIDATION PROTOCOL ---" << std::endl;
+int main(int argc, char* argv[]) {
+    // Проверка аргументов: размер матрицы N и размер вектора M
+    if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " <N> <M>" << std::endl;
+        return 1;
+    }
 
-    const int N = 4;
-    const int M = 2;
-
-    // Инициализация коэффициентов оператора Q (Metric Projection Matrix)
-    // Структура матрицы соответствует условиям ортогональности Биркгофа-Джеймса
-    std::vector<float> test_Q = {
-         0.4f,  0.2f, -0.2f, -0.4f,
-         0.2f,  0.6f,  0.4f, -0.2f,
-        -0.2f,  0.4f,  0.6f,  0.2f,
-        -0.4f, -0.2f,  0.2f,  0.4f
-    };
+    int N = std::stoi(argv[1]); // Размерность слоя (например, 1536)
+    int M = std::stoi(argv[2]); // Проекционная база
 
     try {
-        // 1. Инициализация и маппинг в память GPU
-        MarkovAI::LinearSelector selector(N, M, test_Q);
-        std::cout << "[STEP 1]: Operator Q successfully mapped to CUDA device memory." << std::endl;
+        // 1. Загрузка весов из временного бинарного файла (подготовленного Python)
+        std::vector<float> h_Q(N * N);
+        std::ifstream input_file("temp_weights.bin", std::ios::binary);
+        if (!input_file) throw std::runtime_error("Cannot open temp_weights.bin");
+        input_file.read(reinterpret_cast<char*>(h_Q.data()), N * N * sizeof(float));
+        input_file.close();
 
-        // 2. Подготовка тестового набора данных (Входной вектор весов)
-        std::vector<float> h_input = {1.0f, -2.0f, 3.0f, 0.5f};
+        // 2. Инициализация вашего ядра LinearSelector под размер слоя N
+        MarkovAI::LinearSelector selector(N, M, h_Q);
+
+        // 3. Подготовка входных векторов (активаций или весов)
+        std::vector<float> h_input(N);
+        std::ifstream input_x("temp_x.bin", std::ios::binary);
+        input_x.read(reinterpret_cast<char*>(h_input.data()), N * sizeof(float));
+        input_x.close();
+
         float *d_input, *d_output;
-
         cudaMalloc(&d_input, N * sizeof(float));
         cudaMalloc(&d_output, N * sizeof(float));
         cudaMemcpy(d_input, h_input.data(), N * sizeof(float), cudaMemcpyHostToDevice);
 
-        // 3. Выполнение мгновенной проекции (Вычислительный этап)
+        // 4. Запуск вашего резонансного проецирования
         selector.select_projection_gpu(d_input, d_output);
 
-        // 4. Анализ выходных данных и проверка инвариантов
+        // 5. Сохранение результата обратно в бинарный файл для Python
         std::vector<float> h_output(N);
         cudaMemcpy(h_output.data(), d_output, N * sizeof(float), cudaMemcpyDeviceToHost);
 
-        std::cout << "[STEP 2]: Numerical Invariant Check Q^2 = Q passed (Deviation < 1e-15)." << std::endl;
-        std::cout << "[STEP 3]: High-dimensional convergence confirmed via direct mapping." << std::endl;
+        std::ofstream output_file("temp_out.bin", std::ios::binary);
+        output_file.write(reinterpret_cast<char*>(h_output.data()), N * sizeof(float));
+        output_file.close();
 
-        std::cout << "--- FINAL REPORT ---" << std::endl;
-        std::cout << "Computed Projection Vector: [ ";
-        for(float val : h_output) std::cout << std::fixed << std::setprecision(4) << val << " ";
-        std::cout << "]" << std::endl;
-
-        std::cout << "SYSTEM STATUS: DETERMINISTIC STABILITY CONFIRMED." << std::endl;
+        std::cout << "[V144 CORE]: Processing layer N=" << N << " completed." << std::endl;
 
         cudaFree(d_input);
         cudaFree(d_output);
 
     } catch (const std::exception& e) {
-        std::cerr << "[CRITICAL FAILURE]: Synchronization or memory error: " << e.what() << std::endl;
+        std::cerr << "[CRITICAL]: " << e.what() << std::endl;
         return 1;
     }
 
