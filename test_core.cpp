@@ -7,6 +7,7 @@
  * without explicit written permission.
  * 
  * COMMERCIAL CLAUSE: Any enterprise deployment requires a paid commercial license.
+ * Full license text is available in the LICENSE file in the root directory.
  */
 
 #include "LinearSelector.hpp"
