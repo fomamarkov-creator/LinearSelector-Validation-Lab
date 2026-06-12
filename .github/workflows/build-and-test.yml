@@ -33,15 +33,15 @@ jobs:
 
     - name: Execute Exabit Optimization
       run: |
-        # Копируем скрипт в папку сборки и запускаем сжатие Qwen
-        cp bridge_compressor.py build/Release/
+        # Используем нативный PowerShell для Windows
+        Copy-Item "bridge_compressor.py" -Destination "build/Release/" -Force
         cd build/Release
         python bridge_compressor.py
 
     - name: Bundle Autonomous EXE
       run: |
         # Упаковываем Python-интерфейс и CUDA-ядро в один EXE файл
-        # --onefile делает один запускной файл без зависимостей
+        # В Windows путях внутри кавычек используем точку с запятой для --add-binary
         pyinstaller --onefile --add-binary "build/Release/LinearSelectorBenchmark.exe;." --name "Markov_Shield_v144" build/Release/bridge_compressor.py
 
     - name: Create Clean GitHub Release
@@ -51,12 +51,9 @@ jobs:
         name: "Markov Shield AI v144 (Exabit EXE)"
         draft: false
         prerelease: false
-        # Включаем ТОЛЬКО .exe и веса модели. GitHub не добавит zip/gz автоматически в этот список.
+        # Пути проверяются относительно корня репозитория
         files: |
           dist/Markov_Shield_v144.exe
           build/Release/v144_model.safetensors
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # Дополнительный шаг для удаления автоматических архивов исходного кода из релиза
-    # (GitHub всегда делает их, но мы помечаем их как "Assets to ignore" через настройки релиза в интерфейсе)
