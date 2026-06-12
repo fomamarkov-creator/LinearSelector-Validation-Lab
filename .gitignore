@@ -66,3 +66,17 @@ __pycache__/
 # CUDA логи
 *.log
 *.tmp
+# Игнорируем архивы
+*.zip
+*.gz
+*.tar
+*.rar
+
+# Игнорируем временные файлы и сборку
+build/
+dist/
+bin/
+obj/
+temp_*.bin
+*.log
+.vscode/
