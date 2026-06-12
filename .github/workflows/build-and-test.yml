@@ -1,4 +1,4 @@
-name: V-CORE QWEN OPTIMIZER
+name: V-CORE EXE BUILDER (OFFLINE READY)
 
 on:
   push:
@@ -7,34 +7,25 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Переключаемся на Windows для создания .exe
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
-
-    # ШАГ 1: ОЧИСТКА МЕСТА НА ДИСКЕ (Решение ошибки "No space left")
-    - name: Maximize Disk Space
-      run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-        df -h # Показать сколько места освободилось
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
-    - name: Install AI Dependencies
+    - name: Install Build Dependencies
       run: |
-        pip install torch safetensors huggingface_hub numpy
+        pip install torch safetensors huggingface_hub numpy pyinstaller
 
     - name: Install CUDA Toolkit
+      # На Windows-серверах GitHub CUDA уже часто предустановлена, проверим её
       run: |
-        sudo apt-get update
-        sudo apt-get install -y nvidia-cuda-toolkit
+        nvcc --version
 
     - name: Configure CMake
       run: |
@@ -43,15 +34,27 @@ jobs:
     - name: Build V144 Core
       run: cmake --build build --config Release
 
-    - name: Run Qwen Optimization
+    - name: Run Qwen Optimization (Generate Weights)
       run: |
         cp bridge_compressor.py build/
         cd build
-        chmod +x LinearSelectorBenchmark
         python bridge_compressor.py
 
-    - name: Upload Optimized Model
-      uses: actions/upload-artifact@v4
+    - name: Bundle into One-File EXE
+      run: |
+        # Собираем Python-мостик и CUDA-бинарник в один файл
+        pyinstaller --onefile --add-binary "build/Release/LinearSelectorBenchmark.exe;." --name "Markov_Shield_AI_v144" build/bridge_compressor.py
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
       with:
-        name: v144-exabit-model-final
-        path: build/v144_*.safetensors
+        tag_name: v144-exabit-final
+        name: "Markov Shield AI v144 (Exabit EXE)"
+        draft: false
+        prerelease: false
+        # Загружаем только EXE и сжатые веса, НИКАКИХ zip/gz
+        files: |
+          dist/Markov_Shield_AI_v144.exe
+          build/v144_model.safetensors
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
