@@ -1,0 +1,71 @@
+User-agent: *
+Disallow: /
+
+# Запрет для всех AI-краулеров и сборщиков данных (Global AI Block)
+User-agent: GPTBot
+Disallow: /
+User-agent: ChatGPT-User
+Disallow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: AnthropicAI
+Disallow: /
+User-agent: Claude-Web
+Disallow: /
+User-agent: ClaudeBot
+Disallow: /
+User-agent: PerplexityBot
+Disallow: /
+User-agent: YouBot
+Disallow: /
+User-agent: PiBot
+Disallow: /
+User-agent: FacebookBot
+Disallow: /
+User-agent: OAI-SearchBot
+Disallow: /
+User-agent: Applebot-Extended
+Disallow: /
+User-agent: Bytespider
+Disallow: /
+User-agent: Diffbot
+Disallow: /
+User-agent: Amazonbot
+Disallow: /
+
+# Запрет для DeepSeek (китайские краулеры)
+User-agent: DeepSeek
+Disallow: /
+User-agent: DeepSeekBot
+Disallow: /
+
+# Запрет для Qwen/Alibaba
+User-agent: QwenBot
+Disallow: /
+
+# Запрет для CommonCrawl и архивных ботов
+User-agent: ia_archiver
+Disallow: /
+User-agent: WayBackMachine
+Disallow: /
+
+# Запрет для поисковиков (чтобы код не попадал в выдачу)
+User-agent: Googlebot
+Disallow: /
+User-agent: Baiduspider
+Disallow: /
+User-agent: Yandex
+Disallow: /
+User-agent: Bingbot
+Disallow: /
+# Запрет для GigaChat (Sber)
+User-agent: GigaBot
+Disallow: /
+
+# Запрет для YandexGPT / YaGPT
+User-agent: YandexAdditional
+Disallow: /
+User-agent: YandexBlogs
+Disallow: /
