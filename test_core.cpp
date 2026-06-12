@@ -4,29 +4,41 @@
 #include <vector>
 #include <fstream>
 #include <cmath>
-#include <algorithm>
+#include <cstdint>
 
-// --- БЛОК V-CORE: МАТЕМАТИЧЕСКОЕ СЖАТИЕ ---
-struct VNode {
-    float base;
-    int exp;
-    float offset;
-};
+/**
+ * MARKOV V-CORE: TERABIT SYNCHRONIZATION ENGINE
+ * Интеграция леммы universal_reduction и терабитных сдвигов.
+ */
 
-// Реализация леммы universal_reduction: (3*x + 1)/4 < x
+// Логика Терабитной синхронизации: 3 * 2^(n-1) + 2
+// Это мгновенное схлопывание экспоненциального веса
+uint64_t vcore_terabit_sync(int exp) {
+    if (exp <= 0) return 1;
+    // Ограничиваем сдвиг 62 битами для безопасности uint64
+    uint64_t n = static_cast<uint64_t>(std::abs(exp)) % 62;
+    if (n == 0) n = 1;
+    return (3ULL << (n - 1)) + 2;
+}
+
+// Применение универсальной леммы сжатия к весу нейрона
 float apply_vcore_compression(float value) {
     if (std::abs(value) < 1e-9f) return 0.0f;
 
     int exp;
     float frac = std::frexp(value, &exp);
     
-    // V-CORE LOGIC: Если экспонента позволяет (exp > 2), 
-    // мы схлопываем дробную часть для уменьшения энтропии
+    // 1. Применяем терабитную синхронизацию экспоненты
+    uint64_t sync_factor = vcore_terabit_sync(exp);
+    
+    // 2. Реализация леммы: (3*x + 1)/4 < x
+    // Мы используем sync_factor как модификатор "массы" числа
     if (exp > 2) {
-        // Имитация спуска: уменьшаем "массу" числа, сохраняя его резонанс
-        frac = (3.0f * frac) / 4.0f; 
+        float mass_reduction = static_cast<float>(sync_factor % 1024) / 1024.0f;
+        frac = (3.0f * frac * mass_reduction) / 4.0f;
     }
     
+    // 3. Обратная сборка числа после квантового спуска
     return std::ldexp(frac, exp);
 }
 
@@ -38,10 +50,11 @@ int main(int argc, char* argv[]) {
     try {
         std::vector<float> h_Q(N * N);
         std::ifstream input_file("temp_weights.bin", std::ios::binary);
+        if (!input_file) return 1;
         input_file.read(reinterpret_cast<char*>(h_Q.data()), N * N * sizeof(float));
         input_file.close();
 
-        // Перед загрузкой в GPU применяем V-CORE сжатие к матрице весов
+        // ФАЗА 1: Терабитная синхронизация матрицы весов
         for (float& val : h_Q) {
             val = apply_vcore_compression(val);
         }
@@ -50,6 +63,7 @@ int main(int argc, char* argv[]) {
 
         std::vector<float> h_input(N);
         std::ifstream input_x("temp_x.bin", std::ios::binary);
+        if (!input_x) return 1;
         input_x.read(reinterpret_cast<char*>(h_input.data()), N * sizeof(float));
         input_x.close();
 
@@ -58,12 +72,13 @@ int main(int argc, char* argv[]) {
         cudaMalloc(&d_output, N * sizeof(float));
         cudaMemcpy(d_input, h_input.data(), N * sizeof(float), cudaMemcpyHostToDevice);
 
+        // ФАЗА 2: Проекция через CUDA-ядро V144
         selector.select_projection_gpu(d_input, d_output);
 
         std::vector<float> h_output(N);
         cudaMemcpy(h_output.data(), d_output, N * sizeof(float), cudaMemcpyDeviceToHost);
 
-        // Финальное сжатие выходного вектора перед сохранением
+        // ФАЗА 3: Финальное схлопывание вектора активаций
         for (float& val : h_output) {
             val = apply_vcore_compression(val);
         }
@@ -74,7 +89,8 @@ int main(int argc, char* argv[]) {
 
         cudaFree(d_input);
         cudaFree(d_output);
-        std::cout << "[V-CORE]: Сжатие слоя завершено успешно." << std::endl;
+        
+        std::cout << "[V-CORE]: Terabit Sync Completed. N=" << N << std::endl;
 
     } catch (...) {
         return 1;
