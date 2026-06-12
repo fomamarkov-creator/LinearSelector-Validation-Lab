@@ -53,5 +53,5 @@ jobs:
     - name: Upload Optimized Model
       uses: actions/upload-artifact@v4
       with:
-        name: v144-qwen-coder
+        name: v144-exabit-model-final
         path: build/v144_*.safetensors
