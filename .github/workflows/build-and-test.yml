@@ -7,11 +7,20 @@ on:
 
 jobs:
   build:
-    # Используем стандартный сервер Ubuntu
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+
+    # ШАГ 1: ОЧИСТКА МЕСТА НА ДИСКЕ (Решение ошибки "No space left")
+    - name: Maximize Disk Space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        df -h # Показать сколько места освободилось
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -24,13 +33,11 @@ jobs:
 
     - name: Install CUDA Toolkit
       run: |
-        # Самый надежный способ установки CUDA на GitHub Actions
         sudo apt-get update
         sudo apt-get install -y nvidia-cuda-toolkit
 
     - name: Configure CMake
       run: |
-        # Указываем архитектуру Tesla T4 (75)
         cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=75
 
     - name: Build V144 Core
@@ -38,7 +45,6 @@ jobs:
 
     - name: Run Qwen Optimization
       run: |
-        # Копируем скрипт в папку сборки и запускаем процесс сжатия
         cp bridge_compressor.py build/
         cd build
         chmod +x LinearSelectorBenchmark
