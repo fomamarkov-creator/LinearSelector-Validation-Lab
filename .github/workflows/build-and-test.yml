@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
+# Build system for Markov Shield AI v144 (Exabit Edition)
+
 name: V-CORE EXE RELEASE BUILDER
 
 on:
@@ -7,6 +10,7 @@ on:
 
 jobs:
   build:
+    # Собираем на Windows для получения родного .exe для Asus X541N
     runs-on: windows-latest
 
     steps:
@@ -17,34 +21,42 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install AI Tools
+    - name: Install Dependencies
       run: |
         pip install torch safetensors huggingface_hub numpy pyinstaller
 
-    - name: Configure CMake
+    - name: Configure CMake (Target Architecture: Tesla T4)
       run: cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=75
 
-    - name: Build C++ Core
+    - name: Build V144 Core Binary
       run: cmake --build build --config Release
 
-    - name: Run Optimization
+    - name: Execute Exabit Optimization
       run: |
+        # Копируем скрипт в папку сборки и запускаем сжатие Qwen
         cp bridge_compressor.py build/Release/
         cd build/Release
         python bridge_compressor.py
 
-    - name: Create Autonomous EXE
+    - name: Bundle Autonomous EXE
       run: |
-        # Собираем всё в один файл для оффлайн запуска на Asus
+        # Упаковываем Python-интерфейс и CUDA-ядро в один EXE файл
+        # --onefile делает один запускной файл без зависимостей
         pyinstaller --onefile --add-binary "build/Release/LinearSelectorBenchmark.exe;." --name "Markov_Shield_v144" build/Release/bridge_compressor.py
 
-    - name: Publish Clean Release
+    - name: Create Clean GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: v144-exabit-final
         name: "Markov Shield AI v144 (Exabit EXE)"
+        draft: false
+        prerelease: false
+        # Включаем ТОЛЬКО .exe и веса модели. GitHub не добавит zip/gz автоматически в этот список.
         files: |
           dist/Markov_Shield_v144.exe
           build/Release/v144_model.safetensors
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Дополнительный шаг для удаления автоматических архивов исходного кода из релиза
+    # (GitHub всегда делает их, но мы помечаем их как "Assets to ignore" через настройки релиза в интерфейсе)
