@@ -16,6 +16,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.16
+        with:
+          cuda: '11.8.0'
+          method: 'network'
+          # Ограничиваем установку только нужными компонентами для ускорения
+          sub-packages: '["nvcc", "cudart", "visual_studio_integration"]'
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -25,7 +33,11 @@ jobs:
         run: pip install torch safetensors huggingface_hub numpy pyinstaller
 
       - name: Configure CMake
-        run: cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=75
+        # Передаем путь к установленному компилятору NVCC
+        run: |
+          cmake -S . -B build `
+          -DCMAKE_CUDA_ARCHITECTURES=75 `
+          -DCMAKE_CUDA_COMPILER="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8/bin/nvcc.exe"
 
       - name: Build V144 Core Binary
         run: cmake --build build --config Release
