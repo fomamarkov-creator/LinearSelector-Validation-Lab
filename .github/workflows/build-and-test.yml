@@ -10,7 +10,6 @@ on:
 
 jobs:
   build:
-    # Собираем на Windows для получения родного .exe для Asus X541N
     runs-on: windows-latest
 
     steps:
@@ -23,10 +22,9 @@ jobs:
           python-version: '3.10'
 
       - name: Install Dependencies
-        run: |
-          pip install torch safetensors huggingface_hub numpy pyinstaller
+        run: pip install torch safetensors huggingface_hub numpy pyinstaller
 
-      - name: Configure CMake (Target Architecture: Tesla T4)
+      - name: Configure CMake
         run: cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES=75
 
       - name: Build V144 Core Binary
@@ -34,23 +32,18 @@ jobs:
 
       - name: Execute Exabit Optimization
         run: |
-          # В Windows используем PowerShell для копирования
           Copy-Item "bridge_compressor.py" -Destination "build/Release/" -Force
           cd build/Release
           python bridge_compressor.py
 
       - name: Bundle Autonomous EXE
-        run: |
-          # В Windows разделитель путей в --add-binary должен быть ";"
-          pyinstaller --onefile --add-binary "build/Release/LinearSelectorBenchmark.exe;." --name "Markov_Shield_v144" build/Release/bridge_compressor.py
+        run: pyinstaller --onefile --add-binary "build/Release/LinearSelectorBenchmark.exe;." --name "Markov_Shield_v144" build/Release/bridge_compressor.py
 
       - name: Create Clean GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v144-exabit-final
           name: "Markov Shield AI v144 (Exabit EXE)"
-          draft: false
-          prerelease: false
           files: |
             dist/Markov_Shield_v144.exe
             build/Release/v144_model.safetensors
