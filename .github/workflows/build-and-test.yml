@@ -15,7 +15,7 @@ jobs:
           cuda: '11.8.0'
       - uses: ilammy/msvc-dev-cmd@v1
 
-      # 1. Собираем ядра
+      # 1. Собираем ядра напрямую в корень
       - name: Build Binary Cores
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
@@ -23,13 +23,13 @@ jobs:
           cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
           cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      # 2. Собираем только интерфейс
+      # 2. Собираем интерфейс (без лишней упаковки ядер внутри)
       - name: Build GUI
         run: |
           pip install torch safetensors numpy pyinstaller customtkinter
           pyinstaller --onefile --noconsole --name "Markov_Sims_UI" gui_v149.py
 
-      # 3. Выгружаем ВСЁ в один архив
+      # 3. Выгружаем ВСЁ списком в один ZIP
       - name: Upload Final Pack
         uses: actions/upload-artifact@v4
         with:
