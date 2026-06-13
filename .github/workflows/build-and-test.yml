@@ -31,18 +31,30 @@ jobs:
       - name: Install Dependencies
         run: pip install torch safetensors huggingface_hub numpy pyinstaller
 
-      # ШАГ ДЛЯ ИСПРАВЛЕНИЯ ОШИБКИ "Visual Studio not found"
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure CMake
+      - name: Configure CMake and Fix CUDA Integration
         shell: pwsh
         run: |
           $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
+          
+          # РУЧНАЯ ИНТЕГРАЦИЯ CUDA В VISUAL STUDIO
+          # Копируем расширения MSBuild, чтобы CMake увидел CUDA toolset
+          $vsPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations"
+          $cudaExtensions = "$env:CUDA_PATH\extras\visual_studio_integration\MSBuildExtensions"
+          
+          if (Test-Path $cudaExtensions) {
+              Write-Host "Copying CUDA MSBuild extensions..."
+              Copy-Item "$cudaExtensions\*" -Destination $vsPath -Force
+          } else {
+              Write-Error "CUDA MSBuild extensions not found at $cudaExtensions"
+          }
+
           $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
           
-          # Используем стандартный генератор, который подхватит активированный MSVC
-          cmake -S . -B build `
+          # Запуск конфигурации
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
           -DCMAKE_CUDA_ARCHITECTURES=75 `
           -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe"
 
