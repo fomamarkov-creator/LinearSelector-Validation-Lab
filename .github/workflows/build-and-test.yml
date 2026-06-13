@@ -21,7 +21,7 @@ jobs:
         with:
           cuda: '11.8.0'
           method: 'network'
-          sub-packages: '["nvcc", "cudart", "visual_studio_integration"]'
+          sub-packages: '["nvcc", "cudart"]'
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -29,37 +29,26 @@ jobs:
           python-version: '3.10'
 
       - name: Install Dependencies
-        run: pip install torch safetensors huggingface_hub numpy pyinstaller
+        run: |
+          pip install torch safetensors huggingface_hub numpy pyinstaller
+          choco install ninja  # Ставим быстрый сборщик Ninja
 
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure CMake and Fix CUDA Integration
+      - name: Configure CMake (Ninja Mode)
         shell: pwsh
         run: |
           $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
           $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
           
-          # Находим актуальный путь к VS
-          $vsPath = vswhere -latest -property installationPath
-          # Динамически определяем путь к папке настроек сборки
-          $targetPath = Get-ChildItem -Path "$vsPath\MSBuild\Microsoft\VC" -Filter "v*" | 
-                        Sort-Object Name -Descending | 
-                        Select-Object -First 1 | 
-                        ForEach-Object { Join-Path $_.FullName "BuildCustomizations" }
-
-          $sourcePath = "$env:CUDA_PATH\extras\visual_studio_integration\MSBuildExtensions"
-          
-          if (Test-Path $sourcePath) {
-              if (!(Test-Path $targetPath)) { New-Item -ItemType Directory -Path $targetPath -Force }
-              Copy-Item "$sourcePath\*" -Destination $targetPath -Force
-              Write-Host "CUDA integrated into: $targetPath"
-          }
-
-          # Запуск CMake БЕЗ указания конкретной версии VS (-G), он сам найдет нужную
-          cmake -S . -B build -A x64 `
+          # Используем Ninja вместо тяжелой Visual Studio. 
+          # Это обходит ошибку "No CUDA toolset found".
+          cmake -S . -B build -G "Ninja" `
           -DCMAKE_CUDA_ARCHITECTURES=75 `
-          -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe"
+          -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe" `
+          -DCMAKE_C_COMPILER="cl.exe" `
+          -DCMAKE_CXX_COMPILER="cl.exe"
 
       - name: Build V144 Core Binary
         run: cmake --build build --config Release
@@ -67,16 +56,17 @@ jobs:
       - name: Execute Exabit Optimization
         shell: pwsh
         run: |
-          Copy-Item "bridge_compressor.py" -Destination "build/Release/" -Force
-          cd build/Release
+          Copy-Item "bridge_compressor.py" -Destination "build/" -Force
+          cd build
           python bridge_compressor.py
 
       - name: Bundle Autonomous EXE
         run: |
+          # Ninja кладет бинарник прямо в build, а не в build/Release
           pyinstaller --onefile `
-          --add-binary "build/Release/LinearSelectorBenchmark.exe;." `
+          --add-binary "build/LinearSelectorBenchmark.exe;." `
           --name "Markov_Shield_v144" `
-          build/Release/bridge_compressor.py
+          build/bridge_compressor.py
 
       - name: Create Clean GitHub Release
         uses: softprops/action-gh-release@v1
@@ -85,6 +75,6 @@ jobs:
           name: "Markov Shield AI v144 (Exabit EXE)"
           files: |
             dist/Markov_Shield_v144.exe
-            build/Release/v144_model.safetensors
+            build/v144_model.safetensors
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
