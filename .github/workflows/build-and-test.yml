@@ -25,13 +25,14 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # ШАГ 1: Компилируем только CUDA ядро (Исправлен вызов nvcc)
+      # ШАГ 1: Компилируем ядро с флагом-взломщиком
       - name: Compile CUDA Core
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
           & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
             -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            -allow-unsupported-compiler `
             --compiler-options "/O2 /MD /EHsc"
 
       # ШАГ 2: Собираем основной EXE
