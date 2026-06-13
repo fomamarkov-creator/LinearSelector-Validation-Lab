@@ -1,5 +1,5 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# Build system for 🛡️ Markov Shield AI v148 (Flash Edition)
+# V-CORE v148 FLASH BUILDER (Fix Linker Issues)
 
 name: V-CORE v148 FLASH BUILDER
 
@@ -25,7 +25,7 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # СБОРКА 1: GPU Ядро (Static)
+      # СБОРКА 1: GPU Ядро (Исправлена нехватка системных библиотек)
       - name: Build Static GPU Core
         shell: pwsh
         run: |
@@ -35,13 +35,15 @@ jobs:
             -allow-unsupported-compiler `
             --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
+          # Добавляем системные библиотеки Windows для статической линковки
           cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj `
             /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
             /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
             /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
-            cudart_static.lib /NODEFAULTLIB:LIBCMT /OUT:VCORE_GPU.exe
+            cudart_static.lib Kernel32.lib User32.lib Gdi32.lib Shell32.lib `
+            /OUT:VCORE_GPU.exe
 
-      # СБОРКА 2: CPU Ядро (Mobile/Universal)
+      # СБОРКА 2: CPU Ядро
       - name: Build CPU Core
         shell: pwsh
         run: |
@@ -50,7 +52,7 @@ jobs:
       - name: Install Python Dependencies
         run: pip install torch safetensors numpy pyinstaller
 
-      # Упаковка: Собираем "Универсальный Нож"
+      # Упаковка
       - name: Bundle v148 Universal EXE
         shell: pwsh
         run: |
