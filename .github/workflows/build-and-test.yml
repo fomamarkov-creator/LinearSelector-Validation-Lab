@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v147 STATIC & MOBILE (Resonance 144Hz)
+# Build system for 🛡️ Markov Shield AI v148 (Flash Edition)
 
-name: V-CORE v147 STATIC BUILDER
+name: V-CORE v148 FLASH BUILDER
 
 on:
   push:
@@ -25,37 +25,45 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # СБОРКА 1: GPU СТАТИЧЕСКАЯ (Все DLL внутри!)
-      - name: Build Static GPU Version
+      # СБОРКА 1: GPU Ядро (Static)
+      - name: Build Static GPU Core
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          # Компилируем со статическим рантаймом /MT
           & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
             -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
             -allow-unsupported-compiler `
             --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
-          # Линкуем со статической библиотекой CUDA (cudart_static.lib)
           cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj `
             /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
             /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
             /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
-            cudart_static.lib /OUT:VCORE_v147_STATIC_GPU.exe
+            cudart_static.lib /NODEFAULTLIB:LIBCMT /OUT:VCORE_GPU.exe
 
-      # СБОРКА 2: CPU Универсальная (Для Realme и ПК без NVIDIA)
-      - name: Build Mobile/CPU Version
+      # СБОРКА 2: CPU Ядро (Mobile/Universal)
+      - name: Build CPU Core
         shell: pwsh
         run: |
-          cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_v147_MOBILE_CPU.exe
+          cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      # ВЫГРУЗКА АРТЕФАКТОВ
-      - name: Upload V-CORE v147
+      - name: Install Python Dependencies
+        run: pip install torch safetensors numpy pyinstaller
+
+      # Упаковка: Собираем "Универсальный Нож"
+      - name: Bundle v148 Universal EXE
+        shell: pwsh
+        run: |
+          pyinstaller --onefile `
+            --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
+            --exclude-module huggingface_hub `
+            --add-binary "VCORE_GPU.exe;." `
+            --add-binary "VCORE_CPU.exe;." `
+            --name "Markov_Shield_v148_FLASH" `
+            bridge_compressor.py
+
+      - name: Upload Final Build
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v147_FINAL_PACK
-          path: |
-            VCORE_v147_STATIC_GPU.exe
-            VCORE_v147_MOBILE_CPU.exe
-            bridge_compressor.py
-            README.md
+          name: VCORE_v148_READY
+          path: dist/Markov_Shield_v148_FLASH.exe
