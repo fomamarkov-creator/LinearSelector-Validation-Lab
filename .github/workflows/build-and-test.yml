@@ -1,5 +1,5 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# Build system for Markov Shield AI v144
+# Build system for 🛡️ Markov Shield AI v144 (Exabit Edition)
 
 name: V-CORE EXE RELEASE BUILDER
 
@@ -31,12 +31,18 @@ jobs:
       - name: Install Dependencies
         run: pip install torch safetensors huggingface_hub numpy pyinstaller
 
+      # ШАГ ДЛЯ ИСПРАВЛЕНИЯ ОШИБКИ "Visual Studio not found"
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Configure CMake
         shell: pwsh
         run: |
           $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
           $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+          
+          # Используем стандартный генератор, который подхватит активированный MSVC
+          cmake -S . -B build `
           -DCMAKE_CUDA_ARCHITECTURES=75 `
           -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe"
 
@@ -44,6 +50,7 @@ jobs:
         run: cmake --build build --config Release
 
       - name: Execute Exabit Optimization
+        shell: pwsh
         run: |
           Copy-Item "bridge_compressor.py" -Destination "build/Release/" -Force
           cd build/Release
@@ -51,7 +58,10 @@ jobs:
 
       - name: Bundle Autonomous EXE
         run: |
-          pyinstaller --onefile --add-binary "build/Release/LinearSelectorBenchmark.exe;." --name "Markov_Shield_v144" build/Release/bridge_compressor.py
+          pyinstaller --onefile `
+          --add-binary "build/Release/LinearSelectorBenchmark.exe;." `
+          --name "Markov_Shield_v144" `
+          build/Release/bridge_compressor.py
 
       - name: Create Clean GitHub Release
         uses: softprops/action-gh-release@v1
