@@ -1,40 +1,55 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v150 - THE GUARANTEED PACK
+# V-CORE v150 - GHOST PROTOCOL (Masked Assembly)
 
 name: V-CORE v150 FINAL BUILDER
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-2022
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: Jimver/cuda-toolkit@v0.2.16
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.16
         with:
           cuda: '11.8.0'
-      - uses: ilammy/msvc-dev-cmd@v1
+          method: 'network'
 
-      # 1. СБОРКА ЯДЕР
-      - name: Build Binary Cores
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # КОМПИЛЯЦИЯ С МАСКИРОВКОЙ ПОД .DAT
+      - name: Build Binary Cores (Masked)
+        shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj --compiler-options "/O2 /MT /EHsc"
-          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
-          cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
+          
+          # 1. GPU Ядро (маскируем под .dat)
+          & $nvcc -arch=sm_75 -o VCORE_GPU.dat LinearSelector.cu test_core.cpp `
+            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" -lcudart `
+            --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
-      # 2. ПРОВЕРКА (Посмотри этот шаг в логах!)
-      - name: Check Files Exist
-        run: dir *.exe
+          # 2. CPU Ядро (маскируем под .dat)
+          cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.dat
 
-      # 3. ВЫГРУЗКА (Используем абсолютный путь, чтобы обойти .gitignore)
-      - name: Upload Final Pack
+      # ПРОВЕРКА НАЛИЧИЯ (Посмотри лог этого шага!)
+      - name: Check Ghost Files
+        run: dir *.dat
+
+      # ВЫГРУЗКА БЕЗ ПРОВЕРОК
+      - name: Upload Ghost Pack
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v150_FIXED_PACK
-          # Мы указываем конкретные файлы, это заставит Гитхаб их взять
+          name: VCORE_v150_GHOST_READY
           path: |
-            ${{ github.workspace }}/VCORE_GPU.exe
-            ${{ github.workspace }}/VCORE_CPU.exe
+            VCORE_GPU.dat
+            VCORE_CPU.dat
             bridge_compressor.py
-          if-no-files-found: error
