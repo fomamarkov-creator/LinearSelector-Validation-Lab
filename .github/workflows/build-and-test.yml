@@ -1,15 +1,12 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v150 - FINAL UNSTOPPABLE BUILD
+# V-CORE v151 - THE FINAL MONOLITH
 
-name: V-CORE v150 FINAL
+name: V-CORE v151 FINAL
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
-
-permissions:
-  contents: write # Разрешаем запись на уровне кода
 
 jobs:
   build:
@@ -21,28 +18,15 @@ jobs:
           cuda: '11.8.0'
       - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Build Binary Cores
+      - name: Build Core
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -o VCORE_GPU.exe LinearSelector.cu test_core.cpp -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" -lcudart --compiler-options "/O2 /MT /EHsc"
-          cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
+          # Компилируем всё в один MARKOV_CORE.exe
+          & $nvcc -arch=sm_75 -o MARKOV_CORE.exe LinearSelector.cu test_core.cpp -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" -lcudart --compiler-options "/O2 /MT /EHsc"
 
-      # СТРАХОВКА 1: Выгружаем в обычные Артефакты (100% сработает)
-      - name: Upload to Artifacts
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v150_FIXED
-          path: "*.exe"
-
-      # СТРАХОВКА 2: Создаем официальный Релиз
-      - name: Create Official Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v150-final-${{ github.run_number }}
-          name: V-CORE v150 FINAL (LIGO READY)
-          files: |
-            VCORE_GPU.exe
-            VCORE_CPU.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: VCORE_FINAL_ASSEMBLY
+          path: MARKOV_CORE.exe
