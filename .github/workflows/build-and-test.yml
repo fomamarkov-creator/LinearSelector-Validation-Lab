@@ -1,5 +1,5 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v149 - THE ULTIMATE SIMS-INTERFACE (DIRECT PATH)
+# V-CORE v149 - THE STABLE SIMS-INTERFACE PACK
 
 name: V-CORE v149 FINAL BUILDER
 
@@ -25,32 +25,29 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # 1. СБОРКА ЯДЕР (Без смены директорий)
+      # 1. КАЧЕСТВЕННАЯ СБОРКА ЯДЕР
       - name: Build Binary Cores
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
           & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
-          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib Gdi32.lib Shell32.lib /NODEFAULTLIB:LIBCMT /OUT:VCORE_GPU.exe
+          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
           cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
       - name: Install Dependencies
-        run: pip install torch safetensors numpy pyinstaller customtkinter
+        run: pip install torch safetensors numpy customtkinter pyinstaller
 
-      # 2. УПАКОВКА (Ищем файлы в текущем корне)
-      - name: Bundle GUI Application
-        shell: pwsh
-        run: |
-          pyinstaller --onefile --noconsole `
-            --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
-            --exclude-module huggingface_hub `
-            --add-binary "VCORE_GPU.exe;." `
-            --add-binary "VCORE_CPU.exe;." `
-            --name "Markov_Shield_v149_SIMS" `
-            gui_v149.py
+      # 2. СБОРКА ИНТЕРФЕЙСА (Отдельно, для надежности)
+      - name: Build GUI
+        run: pyinstaller --onefile --noconsole --name "Markov_Sims_UI" gui_v149.py
 
-      - name: Upload Protected Artifact
+      # 3. ВЫГРУЗКА ВСЕГО КОМПЛЕКТА (В один ZIP)
+      - name: Upload Final Pack
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v149_FINAL_READY
-          path: dist/Markov_Shield_v149_SIMS.exe
+          name: VCORE_v149_LIGO_PACK
+          path: |
+            VCORE_GPU.exe
+            VCORE_CPU.exe
+            dist/Markov_Sims_UI.exe
+            README.md
