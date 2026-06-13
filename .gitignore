@@ -1,82 +1,30 @@
-# Скомпилированные файлы (бинарники)
-*.exe
-*.out
-*.app
-*.so
-*.dll
-*.dylib
+# --- MARKOV SHIELD v150 GITIGNORE ---
 
-# CUDA и Объектные файлы
-*.o
-*.obj
-*.cu.o
-*.lib
-*.a
-
-# Python и PyTorch
+# Python & System
 __pycache__/
 *.py[cod]
 *$py.class
-.ipynb_checkpoints/
-*.pt
-*.pth
-
-# Сборка (CMake / VS)
-build/
-bin/
-out/
-.vs/
-.vscode/
-CMakeSettings.json
-
-# Логи и временные файлы
-*.log
-*.tmp
 .DS_Store
-# Сборка и бинарники
-build/
-bin/
-*.exe
-*.so
-*.o
+.vscode/
+.vs/
 
-# Профилирование (NVIDIA Nsight / Google Benchmark)
-*.qdrep
-*.nsys-rep
-*.sqlite
-benchmark_results.json
-
-# Python кэш
-__pycache__/
-# Скомпилированные файлы
-*.exe
-*.out
-*.so
-*.dll
+# CUDA/C++ Временные файлы (кроме самих ядер)
 *.o
 *.obj
-
-# Папки сборки и кэш
-build/
-bin/
-.vs/
-.vscode/
-__pycache__/
-
-# CUDA логи
-*.log
+*.cu.o
 *.tmp
-# Игнорируем архивы
-*.zip
-*.gz
-*.tar
-*.rar
+*.log
 
-# Игнорируем временные файлы и сборку
-build/
-dist/
+# Временные файлы весов (чтобы не забить Гитхаб гигабайтами)
+temp_*.bin
+model.safetensors
+
+# ПАПКИ СБОРКИ (Разрешаем dist для артефактов)
+# Мы НЕ игнорируем *.exe, чтобы Гитхаб мог их выгрузить в релиз
+# Мы НЕ игнорируем dist/ во время сборки GitHub Actions
+
+# Игнорируем только тяжелые локальные папки IDE
 bin/
 obj/
-temp_*.bin
-*.log
-.vscode/
+out/
+CMakeSettings.json
