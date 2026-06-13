@@ -1,7 +1,8 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v149 - THE ULTIMATE SIMS-MATRIX INTERFACE
+# V-CORE v149 - THE ULTIMATE SIMS-MATRIX INTERFACE (STATIC & SECURE)
+# LICENSE: AGPL-3.0 + DUAL-LICENSE + NO AI TRAINING + MILITARY/ACADEMIC BAN
 
-name: V-CORE v149 GUI BUILDER
+name: V-CORE v149 FINAL BUILDER
 
 on:
   push:
@@ -16,6 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: License Verification
+        run: |
+          echo "PROTOCOL: Markov Shield Protection Active"
+          echo "NOTICE: Dual-License required for commercial/military use."
+          echo "RESTRICTION: DO NOT TRAIN. No AI model distillation allowed."
+
       - name: Install CUDA Toolkit
         uses: Jimver/cuda-toolkit@v0.2.16
         with:
@@ -25,32 +32,49 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # СБОРКА ЯДЕР (GPU и CPU)
-      - name: Build Binary Cores
+      # СБОРКА ЯДЕР: Принудительная статическая линковка
+      - name: Build Binary Cores (GPU & CPU)
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
-          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
+          
+          # 1. GPU Core
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj `
+            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            -allow-unsupported-compiler `
+            --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
+
+          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj `
+            /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
+            /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
+            cudart_static.lib Kernel32.lib User32.lib Gdi32.lib Shell32.lib `
+            /NODEFAULTLIB:LIBCMT /OUT:VCORE_GPU.exe
+
+          # 2. CPU Core (Mobile/Universal)
           cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      # УСТАНОВКА БИБЛИОТЕК ДЛЯ ИНТЕРФЕЙСА
-      - name: Install GUI Dependencies
+      - name: Install Dependencies
         run: pip install torch safetensors numpy pyinstaller customtkinter
 
-      # ФИНАЛЬНАЯ УПАКОВКА В ОДИН КРАСИВЫЙ EXE
+      # Ультимативная упаковка: Все компоненты в одном Sims-интерфейсе
       - name: Bundle GUI Application
         shell: pwsh
         run: |
+          # Принудительная проверка наличия ядер перед упаковкой
+          if (-not (Test-Path "./VCORE_GPU.exe")) { throw "GPU Core missing!" }
+          if (-not (Test-Path "./VCORE_CPU.exe")) { throw "CPU Core missing!" }
+          
           pyinstaller --onefile --noconsole `
             --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
+            --exclude-module huggingface_hub `
             --add-binary "VCORE_GPU.exe;." `
             --add-binary "VCORE_CPU.exe;." `
-            --name "Markov_Shield_v149_SIMS_INTERFACE" `
+            --name "Markov_Shield_v149_SIMS" `
             gui_v149.py
 
-      - name: Upload Final Interface
+      - name: Upload Protected Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: V-CORE_v149_GUI_READY
-          path: dist/Markov_Shield_v149_SIMS_INTERFACE.exe
+          name: VCORE_v149_FINAL_READY
+          path: dist/Markov_Shield_v149_SIMS.exe
