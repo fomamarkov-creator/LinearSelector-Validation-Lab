@@ -14,6 +14,7 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <vector>
+#include <string>  // Добавлено для корректной работы std::stoi
 #include <fstream>
 #include <cmath>
 #include <cstdint>
@@ -53,6 +54,7 @@ int main(int argc, char* argv[]) {
 
         std::vector<float> h_input(N);
         std::ifstream input_x("temp_x.bin", std::ios::binary);
+        if (!input_x) return 1;
         input_x.read(reinterpret_cast<char*>(h_input.data()), N * sizeof(float));
         input_x.close();
 
