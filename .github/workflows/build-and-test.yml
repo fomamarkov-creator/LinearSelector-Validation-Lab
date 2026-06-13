@@ -30,13 +30,11 @@ jobs:
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          # Компилируем .cu с флагом /MD через --compiler-options
           & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
             -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
             -allow-unsupported-compiler `
             --compiler-options "/O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
-          # Линкуем EXE с флагами игнорирования конфликтов библиотек
           cl.exe /O2 /MD /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj `
             /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
             /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
@@ -52,8 +50,14 @@ jobs:
       - name: Install Python Dependencies
         run: pip install torch safetensors numpy pyinstaller
 
+      # Упаковка: теперь мы точно указываем, где лежат файлы
       - name: Bundle Both to EXE
+        shell: pwsh
         run: |
+          # Принудительно проверяем наличие файлов в текущей директории
+          if (Test-Path "VCORE_GPU.exe") { Write-Host "GPU Binary Found" }
+          if (Test-Path "VCORE_CPU.exe") { Write-Host "CPU Binary Found" }
+          
           pyinstaller --onefile `
             --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
             --add-binary "VCORE_GPU.exe;." `
