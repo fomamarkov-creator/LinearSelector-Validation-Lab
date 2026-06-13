@@ -1,5 +1,5 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v148 FINAL (Direct Artifact Edition)
+# V-CORE v148 FINAL (Fix LNK1181)
 
 name: V-CORE v148 FLASH BUILDER
 
@@ -25,19 +25,29 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
+      # СБОРКА 1: GPU Ядро (Исправлен путь к .obj)
       - name: Build Static GPU Core
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
-          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
+          # Принудительно создаем .obj в текущей папке
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj `
+            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            -allow-unsupported-compiler `
+            --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
+
+          # Линкуем, явно указывая на файл в текущей папке
+          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj `
+            /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
+            /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
+            cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
 
       - name: Build CPU Core
         shell: pwsh
         run: |
           cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      # Прямая выгрузка всех файлов в один архив без упаковщика
       - name: Upload All Components
         uses: actions/upload-artifact@v4
         with:
@@ -46,4 +56,3 @@ jobs:
             VCORE_GPU.exe
             VCORE_CPU.exe
             bridge_compressor.py
-            README.md
