@@ -25,7 +25,7 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # СБОРКА 1: GPU Версия (Исправлен конфликт RuntimeLibrary)
+      # СБОРКА 1: GPU Версия (Исправление LNK2038)
       - name: Build GPU Version
         shell: pwsh
         run: |
@@ -50,16 +50,20 @@ jobs:
       - name: Install Python Dependencies
         run: pip install torch safetensors numpy pyinstaller
 
-      # Упаковка: теперь мы точно указываем, где лежат файлы
+      # ФИНАЛЬНАЯ УПАКОВКА: Гарантируем видимость файлов
       - name: Bundle Both to EXE
         shell: pwsh
         run: |
-          # Принудительно проверяем наличие файлов в текущей директории
-          if (Test-Path "VCORE_GPU.exe") { Write-Host "GPU Binary Found" }
-          if (Test-Path "VCORE_CPU.exe") { Write-Host "CPU Binary Found" }
+          # Проверяем и фиксируем пути
+          $curr = Get-Location
+          Write-Host "Current path: $curr"
           
+          # Запуск упаковки с полным игнорированием сетевых модулей
           pyinstaller --onefile `
-            --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
+            --exclude-module matplotlib `
+            --exclude-module notebook `
+            --exclude-module PIL `
+            --exclude-module huggingface_hub `
             --add-binary "VCORE_GPU.exe;." `
             --add-binary "VCORE_CPU.exe;." `
             --name "Markov_Shield_v146_UNIVERSAL" `
