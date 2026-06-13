@@ -16,33 +16,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ДОБАВЛЯЕМ КЭШИРОВАНИЕ CUDA (Чтобы сборка была быстрой)
-      - name: Cache CUDA
-        id: cache-cuda
-        uses: actions/cache@v3
-        with:
-          path: 'C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8'
-          key: ${{ runner.os }}-cuda-11.8
-
-      - name: Install CUDA Toolkit
-        if: steps.cache-cuda.outputs.cache-hit != 'true'
-        uses: Jimver/cuda-toolkit@v0.2.16
-        with:
-          cuda: '11.8.0'
-          method: 'network'
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install Dependencies
-        run: |
-          pip install torch safetensors huggingface_hub numpy pyinstaller
-          choco install ninja
+      - name: Install CUDA via Chocolatey
+        # Chocolatey надежнее прописывает пути в реестр Windows
+        run: choco install cuda --version=11.8.0.20230207 -y
 
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Install Python Dependencies
+        run: pip install torch safetensors huggingface_hub numpy pyinstaller choco install ninja -y
 
       - name: Configure CMake
         shell: pwsh
@@ -51,7 +33,6 @@ jobs:
           $env:CUDA_PATH = $cudaPath
           $env:PATH = "$cudaPath\bin;$env:PATH"
           
-          # Используем Ninja и ПРЯМЫЕ пути, чтобы не зависеть от версии Visual Studio
           cmake -S . -B build -G "Ninja" `
           -DCMAKE_BUILD_TYPE=Release `
           -DCMAKE_CUDA_COMPILER="$cudaPath\bin\nvcc.exe" `
