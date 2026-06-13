@@ -25,18 +25,15 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # ШАГ 1: Компилируем ядро с двойным взломом защиты
       - name: Compile CUDA Core
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          # Добавляем макрос _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH для обхода STL1002
           & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
             -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
             -allow-unsupported-compiler `
             --compiler-options "/O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
-      # ШАГ 2: Собираем основной EXE
       - name: Link Final Benchmark
         shell: pwsh
         run: |
@@ -55,16 +52,26 @@ jobs:
 
       - name: Bundle Autonomous EXE
         run: |
+          # Добавляем исключения, чтобы уменьшить размер
           pyinstaller --onefile `
+            --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
             --add-binary "LinearSelectorBenchmark.exe;." `
             --name "Markov_Shield_v144" `
             bridge_compressor.py
 
-      - name: Create Release
+      # ЭТОТ ШАГ ПОЗВОЛИТ СКАЧАТЬ ФАЙЛ, ДАЖЕ ЕСЛИ ОН БОЛЬШОЙ
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Markov_Shield_v144_Build
+          path: dist/Markov_Shield_v144.exe
+          retention-days: 5
+
+      - name: Create Clean Release
         uses: softprops/action-gh-release@v1
+        if: success()
         with:
           tag_name: v144-exabit-final
-          name: "Markov Shield AI v144 (Exabit EXE)"
           files: |
             dist/Markov_Shield_v144.exe
             v144_model.safetensors
