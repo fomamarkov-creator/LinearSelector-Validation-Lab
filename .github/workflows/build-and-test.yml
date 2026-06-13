@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# Build system for 🛡️ Markov Shield AI v146 (LIGO Edition)
+# Build system for 🛡️ Markov Shield AI v146 (Offline LIGO Edition)
 
-name: V-CORE v146 LIGO BUILDER
+name: V-CORE v146 OFFLINE BUILDER
 
 on:
   push:
@@ -45,20 +45,20 @@ jobs:
             /OUT:LinearSelectorBenchmark.exe
 
       - name: Install Python Dependencies
-        run: pip install torch safetensors huggingface_hub numpy pyinstaller
+        run: pip install torch safetensors numpy pyinstaller
 
-      - name: Execute LIGO Compression
-        run: python bridge_compressor.py
-
+      # Упаковка полностью автономного EXE (без интернета)
       - name: Bundle Autonomous EXE
         run: |
           pyinstaller --onefile `
             --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
-            --name "Markov_Shield_v146_LIGO" `
+            --exclude-module huggingface_hub `
+            --add-binary "LinearSelectorBenchmark.exe;." `
+            --name "Markov_Shield_v146_LIGO_OFFLINE" `
             bridge_compressor.py
 
-      - name: Upload LIGO Artifact
+      - name: Upload Offline Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Markov_Shield_v146_LIGO_Build
-          path: dist/Markov_Shield_v146_LIGO.exe
+          name: VCORE_v146_OFFLINE_READY
+          path: dist/Markov_Shield_v146_LIGO_OFFLINE.exe
