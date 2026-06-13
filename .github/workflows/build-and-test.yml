@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# Build system for 🛡️ Markov Shield AI v144 (Exabit Edition)
+# Build system for 🛡️ Markov Shield AI v146 (LIGO Edition)
 
-name: V-CORE EXE RELEASE BUILDER
+name: V-CORE v146 LIGO BUILDER
 
 on:
   push:
@@ -47,33 +47,18 @@ jobs:
       - name: Install Python Dependencies
         run: pip install torch safetensors huggingface_hub numpy pyinstaller
 
-      - name: Execute Exabit Optimization
+      - name: Execute LIGO Compression
         run: python bridge_compressor.py
 
       - name: Bundle Autonomous EXE
         run: |
-          # Добавляем исключения, чтобы уменьшить размер
           pyinstaller --onefile `
             --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
-            --add-binary "LinearSelectorBenchmark.exe;." `
-            --name "Markov_Shield_v144" `
+            --name "Markov_Shield_v146_LIGO" `
             bridge_compressor.py
 
-      # ЭТОТ ШАГ ПОЗВОЛИТ СКАЧАТЬ ФАЙЛ, ДАЖЕ ЕСЛИ ОН БОЛЬШОЙ
-      - name: Upload Artifact
+      - name: Upload LIGO Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Markov_Shield_v144_Build
-          path: dist/Markov_Shield_v144.exe
-          retention-days: 5
-
-      - name: Create Clean Release
-        uses: softprops/action-gh-release@v1
-        if: success()
-        with:
-          tag_name: v144-exabit-final
-          files: |
-            dist/Markov_Shield_v144.exe
-            v144_model.safetensors
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: Markov_Shield_v146_LIGO_Build
+          path: dist/Markov_Shield_v146_LIGO.exe
