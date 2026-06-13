@@ -16,9 +16,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install CUDA
-        # Убрали сложную версию, ставим просто 11.8
-        run: choco install cuda --version=11.8 -y --no-progress
+      - name: Install CUDA Toolkit
+        # Возвращаемся к проверенному установщику, он работает стабильнее, чем choco
+        uses: Jimver/cuda-toolkit@v0.2.16
+        with:
+          cuda: '11.8.0'
+          method: 'network'
 
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -29,11 +32,18 @@ jobs:
           $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
           $nvcc = "$cudaPath\bin\nvcc.exe"
           
-          # 1. Компилируем ядро CUDA напрямую
+          # Проверяем, на месте ли компилятор
+          if (!(Test-Path $nvcc)) { 
+            Write-Error "NVCC not found at $nvcc. Check CUDA installation path."
+            exit 1
+          }
+
+          # 1. Компилируем ядро CUDA напрямую в объектный файл
           & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
             -I"$cudaPath\include" --compiler-options "/O2 /MD"
 
-          # 2. Компилируем C++ интерфейс и линкуем с CUDA вручную
+          # 2. Компилируем C++ интерфейс и линкуем всё вместе вручную
+          # Используем cl.exe напрямую, обходя все капризы CMake
           cl.exe /O2 /MD test_core.cpp LinearSelector.obj `
             /I"$cudaPath\include" `
             /link /LIBPATH:"$cudaPath\lib\x64" cudart.lib `
