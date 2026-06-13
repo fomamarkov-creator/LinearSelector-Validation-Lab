@@ -1,49 +1,48 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v150 - THE UNBREAKABLE RELEASE
+# V-CORE v150 - FINAL UNSTOPPABLE BUILD
 
-name: V-CORE v150 RELEASE
+name: V-CORE v150 FINAL
 
 on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: write # Разрешаем запись на уровне кода
+
 jobs:
   build:
     runs-on: windows-2022
-    permissions:
-      contents: write # РАЗРЕШАЕМ ЗАПИСЬ ФАЙЛОВ В РЕЛИЗ
-    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install CUDA
-        uses: Jimver/cuda-toolkit@v0.2.16
+      - uses: actions/checkout@v4
+      - uses: Jimver/cuda-toolkit@v0.2.16
         with:
           cuda: '11.8.0'
+      - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Build Cores
+      - name: Build Binary Cores
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
           & $nvcc -arch=sm_75 -o VCORE_GPU.exe LinearSelector.cu test_core.cpp -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" -lcudart --compiler-options "/O2 /MT /EHsc"
           cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      - name: Create Release and Upload Files
+      # СТРАХОВКА 1: Выгружаем в обычные Артефакты (100% сработает)
+      - name: Upload to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: VCORE_v150_FIXED
+          path: "*.exe"
+
+      # СТРАХОВКА 2: Создаем официальный Релиз
+      - name: Create Official Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v150-final-${{ github.run_number }}
           name: V-CORE v150 FINAL (LIGO READY)
-          draft: false
-          prerelease: false
-          # ЖЕСТКО УКАЗЫВАЕМ ФАЙЛЫ
           files: |
             VCORE_GPU.exe
             VCORE_CPU.exe
-            bridge_compressor.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
