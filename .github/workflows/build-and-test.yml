@@ -1,7 +1,6 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
 # Build system for 🛡️ Markov Shield AI v146 (Offline LIGO Edition)
-
-name: V-CORE v146 OFFLINE BUILDER
+name: V-CORE v146 UNIVERSAL BUILDER
 
 on:
   push:
@@ -25,40 +24,29 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Compile CUDA Core
+      # СБОРКА 1: GPU Версия (CUDA)
+      - name: Build GPU Version
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
-            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
-            -allow-unsupported-compiler `
-            --compiler-options "/O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH -allow-unsupported-compiler
+          cl.exe /O2 /MD /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart.lib /OUT:VCORE_GPU.exe
 
-      - name: Link Final Benchmark
+      # СБОРКА 2: CPU Версия (Для смартфонов и простых ПК)
+      - name: Build CPU Version
         shell: pwsh
         run: |
-          $cudaLib = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64"
-          $cudaInc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include"
-          cl.exe /O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH test_core.cpp LinearSelector.obj `
-            /I"$cudaInc" `
-            /link /LIBPATH:"$cudaLib" cudart.lib `
-            /OUT:LinearSelectorBenchmark.exe
+          cl.exe /O2 /MD /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      - name: Install Python Dependencies
+      - name: Install PyInstaller
         run: pip install torch safetensors numpy pyinstaller
 
-      # Упаковка полностью автономного EXE (без интернета)
-      - name: Bundle Autonomous EXE
+      - name: Bundle Both to EXE
         run: |
-          pyinstaller --onefile `
-            --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
-            --exclude-module huggingface_hub `
-            --add-binary "LinearSelectorBenchmark.exe;." `
-            --name "Markov_Shield_v146_LIGO_OFFLINE" `
-            bridge_compressor.py
+          pyinstaller --onefile --add-binary "VCORE_GPU.exe;." --add-binary "VCORE_CPU.exe;." --name "Markov_Shield_v146_UNIVERSAL" bridge_compressor.py
 
-      - name: Upload Offline Artifact
+      - name: Upload Universal Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v146_OFFLINE_READY
-          path: dist/Markov_Shield_v146_LIGO_OFFLINE.exe
+          name: VCORE_v146_UNIVERSAL_READY
+          path: dist/Markov_Shield_v146_UNIVERSAL.exe
