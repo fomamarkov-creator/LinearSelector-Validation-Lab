@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v148 FINAL (Fix LNK1181)
+# V-CORE v149 - THE ULTIMATE SIMS-MATRIX INTERFACE
 
-name: V-CORE v148 FLASH BUILDER
+name: V-CORE v149 GUI BUILDER
 
 on:
   push:
@@ -25,34 +25,32 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # СБОРКА 1: GPU Ядро (Исправлен путь к .obj)
-      - name: Build Static GPU Core
+      # СБОРКА ЯДЕР (GPU и CPU)
+      - name: Build Binary Cores
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          # Принудительно создаем .obj в текущей папке
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj `
-            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
-            -allow-unsupported-compiler `
-            --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
-
-          # Линкуем, явно указывая на файл в текущей папке
-          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj `
-            /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
-            /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
-            /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
-            cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
-
-      - name: Build CPU Core
-        shell: pwsh
-        run: |
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
+          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
           cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      - name: Upload All Components
+      # УСТАНОВКА БИБЛИОТЕК ДЛЯ ИНТЕРФЕЙСА
+      - name: Install GUI Dependencies
+        run: pip install torch safetensors numpy pyinstaller customtkinter
+
+      # ФИНАЛЬНАЯ УПАКОВКА В ОДИН КРАСИВЫЙ EXE
+      - name: Bundle GUI Application
+        shell: pwsh
+        run: |
+          pyinstaller --onefile --noconsole `
+            --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
+            --add-binary "VCORE_GPU.exe;." `
+            --add-binary "VCORE_CPU.exe;." `
+            --name "Markov_Shield_v149_SIMS_INTERFACE" `
+            gui_v149.py
+
+      - name: Upload Final Interface
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v148_READY_TO_RUN
-          path: |
-            VCORE_GPU.exe
-            VCORE_CPU.exe
-            bridge_compressor.py
+          name: V-CORE_v149_GUI_READY
+          path: dist/Markov_Shield_v149_SIMS_INTERFACE.exe
