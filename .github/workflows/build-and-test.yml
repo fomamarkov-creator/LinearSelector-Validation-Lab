@@ -31,24 +31,23 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install torch safetensors huggingface_hub numpy pyinstaller
-          choco install ninja  # Ставим быстрый сборщик Ninja
+          choco install ninja
 
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure CMake (Ninja Mode)
+      - name: Configure CMake (V-CORE Ninja Mode)
         shell: pwsh
         run: |
           $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
           $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
           
-          # Используем Ninja вместо тяжелой Visual Studio. 
-          # Это обходит ошибку "No CUDA toolset found".
+          # Мы передаем путь к NVCC напрямую в переменную CMAKE_CUDA_COMPILER.
+          # Это позволит вашему новому CMakeLists.txt успешно выполнить enable_language(CUDA).
           cmake -S . -B build -G "Ninja" `
-          -DCMAKE_CUDA_ARCHITECTURES=75 `
           -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe" `
-          -DCMAKE_C_COMPILER="cl.exe" `
-          -DCMAKE_CXX_COMPILER="cl.exe"
+          -DCMAKE_CUDA_ARCHITECTURES=75 `
+          -DCMAKE_BUILD_TYPE=Release
 
       - name: Build V144 Core Binary
         run: cmake --build build --config Release
@@ -56,13 +55,14 @@ jobs:
       - name: Execute Exabit Optimization
         shell: pwsh
         run: |
+          # Ninja кладет файл прямо в корень build, в отличие от Visual Studio
           Copy-Item "bridge_compressor.py" -Destination "build/" -Force
           cd build
           python bridge_compressor.py
 
       - name: Bundle Autonomous EXE
         run: |
-          # Ninja кладет бинарник прямо в build, а не в build/Release
+          # Собираем всё в один EXE
           pyinstaller --onefile `
           --add-binary "build/LinearSelectorBenchmark.exe;." `
           --name "Markov_Shield_v144" `
