@@ -1,5 +1,5 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# Build system for 🛡️ Markov Shield AI v146 (Universal Resonance)
+# V-CORE v146 UNIVERSAL (Direct Files Edition)
 
 name: V-CORE v146 UNIVERSAL BUILDER
 
@@ -25,52 +25,26 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # СБОРКА 1: GPU Версия (Исправление LNK2038)
+      # СБОРКА 1: GPU Версия
       - name: Build GPU Version
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
-            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
-            -allow-unsupported-compiler `
-            --compiler-options "/O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj -allow-unsupported-compiler --compiler-options "/O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
+          cl.exe /O2 /MD /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart.lib /NODEFAULTLIB:LIBCMT /OUT:VCORE_GPU.exe
 
-          cl.exe /O2 /MD /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj `
-            /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
-            /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
-            /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
-            cudart.lib /NODEFAULTLIB:LIBCMT /OUT:VCORE_GPU.exe
-
-      # СБОРКА 2: CPU Версия (Универсальная)
+      # СБОРКА 2: CPU Версия
       - name: Build CPU Version
         shell: pwsh
         run: |
           cl.exe /O2 /MD /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      - name: Install Python Dependencies
-        run: pip install torch safetensors numpy pyinstaller
-
-      # ФИНАЛЬНАЯ УПАКОВКА: Гарантируем видимость файлов
-      - name: Bundle Both to EXE
-        shell: pwsh
-        run: |
-          # Проверяем и фиксируем пути
-          $curr = Get-Location
-          Write-Host "Current path: $curr"
-          
-          # Запуск упаковки с полным игнорированием сетевых модулей
-          pyinstaller --onefile `
-            --exclude-module matplotlib `
-            --exclude-module notebook `
-            --exclude-module PIL `
-            --exclude-module huggingface_hub `
-            --add-binary "VCORE_GPU.exe;." `
-            --add-binary "VCORE_CPU.exe;." `
-            --name "Markov_Shield_v146_UNIVERSAL" `
-            bridge_compressor.py
-
-      - name: Upload Universal Artifact
+      # ГАРАНТИРОВАННАЯ ВЫГРУЗКА БЕЗ ПИЗОНОВСКИХ ОШИБОК
+      - name: Upload All Components
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v146_UNIVERSAL_READY
-          path: dist/Markov_Shield_v146_UNIVERSAL.exe
+          name: VCORE_v146_READY_TO_RUN
+          path: |
+            VCORE_GPU.exe
+            VCORE_CPU.exe
+            bridge_compressor.py
