@@ -1,5 +1,6 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# Build system for 🛡️ Markov Shield AI v146 (Offline LIGO Edition)
+# Build system for 🛡️ Markov Shield AI v146 (Universal Resonance)
+
 name: V-CORE v146 UNIVERSAL BUILDER
 
 on:
@@ -24,26 +25,41 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # СБОРКА 1: GPU Версия (CUDA)
+      # СБОРКА 1: GPU Версия (Исправлен конфликт RuntimeLibrary)
       - name: Build GPU Version
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH -allow-unsupported-compiler
-          cl.exe /O2 /MD /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart.lib /OUT:VCORE_GPU.exe
+          # Компилируем .cu с флагом /MD через --compiler-options
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
+            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            -allow-unsupported-compiler `
+            --compiler-options "/O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
-      # СБОРКА 2: CPU Версия (Для смартфонов и простых ПК)
+          # Линкуем EXE с флагами игнорирования конфликтов библиотек
+          cl.exe /O2 /MD /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj `
+            /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
+            /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
+            cudart.lib /NODEFAULTLIB:LIBCMT /OUT:VCORE_GPU.exe
+
+      # СБОРКА 2: CPU Версия (Универсальная)
       - name: Build CPU Version
         shell: pwsh
         run: |
           cl.exe /O2 /MD /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      - name: Install PyInstaller
+      - name: Install Python Dependencies
         run: pip install torch safetensors numpy pyinstaller
 
       - name: Bundle Both to EXE
         run: |
-          pyinstaller --onefile --add-binary "VCORE_GPU.exe;." --add-binary "VCORE_CPU.exe;." --name "Markov_Shield_v146_UNIVERSAL" bridge_compressor.py
+          pyinstaller --onefile `
+            --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
+            --add-binary "VCORE_GPU.exe;." `
+            --add-binary "VCORE_CPU.exe;." `
+            --name "Markov_Shield_v146_UNIVERSAL" `
+            bridge_compressor.py
 
       - name: Upload Universal Artifact
         uses: actions/upload-artifact@v4
