@@ -25,23 +25,24 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # ШАГ 1: Компилируем только CUDA ядро
+      # ШАГ 1: Компилируем только CUDA ядро (Исправлен вызов nvcc)
       - name: Compile CUDA Core
         shell: pwsh
         run: |
-          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
-          $nvcc = "$cudaPath\bin\nvcc.exe"
+          $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
           & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
-            -I"$cudaPath\include" --compiler-options "/O2 /MD /EHsc"
+            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            --compiler-options "/O2 /MD /EHsc"
 
-      # ШАГ 2: Собираем основной EXE (Линкуем готовый .obj)
+      # ШАГ 2: Собираем основной EXE
       - name: Link Final Benchmark
         shell: pwsh
         run: |
-          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
+          $cudaLib = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64"
+          $cudaInc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include"
           cl.exe /O2 /MD /EHsc test_core.cpp LinearSelector.obj `
-            /I"$cudaPath\include" `
-            /link /LIBPATH:"$cudaPath\lib\x64" cudart.lib `
+            /I"$cudaInc" `
+            /link /LIBPATH:"$cudaLib" cudart.lib `
             /OUT:LinearSelectorBenchmark.exe
 
       - name: Install Python Dependencies
