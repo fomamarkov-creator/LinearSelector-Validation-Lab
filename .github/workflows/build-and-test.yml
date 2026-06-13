@@ -34,28 +34,32 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Configure CMake and Force CUDA Integration
+      - name: Configure CMake and Fix CUDA Integration
         shell: pwsh
         run: |
           $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
-          
-          # Находим путь к BuildCustomizations внутри Visual Studio 2022
-          $vsInstallPath = vswhere -latest -property installationPath
-          $targetPath = Join-Path $vsInstallPath "MSBuild\Microsoft\VC\v170\BuildCustomizations"
-          $sourcePath = "$env:CUDA_PATH\extras\visual_studio_integration\MSBuildExtensions"
-          
-          Write-Host "Target path: $targetPath"
-          Write-Host "Source path: $sourcePath"
-
-          if (Test-Path $sourcePath) {
-              if (!(Test-Path $targetPath)) { New-Item -ItemType Directory -Path $targetPath -Force }
-              Copy-Item "$sourcePath\*" -Destination $targetPath -Force
-              Write-Host "CUDA Visual Studio Integration files copied."
-          }
-
           $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
           
-          # Запуск CMake с явным указанием на набор инструментов
+          # Динамический поиск пути к Visual Studio
+          $vsPath = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          $targetPath = Join-Path $vsPath "MSBuild\Microsoft\VC\v170\BuildCustomizations"
+          $sourcePath = "$env:CUDA_PATH\extras\visual_studio_integration\MSBuildExtensions"
+          
+          Write-Host "Searching for Visual Studio at: $vsPath"
+          Write-Host "Target BuildCustomizations path: $targetPath"
+
+          # Создаем папку, если её нет, и копируем файлы
+          if (Test-Path $sourcePath) {
+              if (!(Test-Path $targetPath)) { 
+                  New-Item -ItemType Directory -Path $targetPath -Force 
+              }
+              Copy-Item "$sourcePath\*" -Destination $targetPath -Force
+              Write-Host "Successfully integrated CUDA into Visual Studio."
+          } else {
+              Write-Error "CUDA MSBuild extensions not found!"
+          }
+
+          # Конфигурация CMake
           cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
           -DCMAKE_CUDA_ARCHITECTURES=75 `
           -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe"
