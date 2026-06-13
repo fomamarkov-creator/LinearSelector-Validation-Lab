@@ -1,5 +1,5 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v149 - THE QUALITY SIMS-INTERFACE (STATIC)
+# V-CORE v149 - THE ULTIMATE SIMS-INTERFACE (DIRECT PATH)
 
 name: V-CORE v149 FINAL BUILDER
 
@@ -25,7 +25,7 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # 1. КАЧЕСТВЕННАЯ СБОРКА ЯДЕР (Статическая линковка)
+      # 1. СБОРКА ЯДЕР (Без смены директорий)
       - name: Build Binary Cores
         shell: pwsh
         run: |
@@ -37,17 +37,10 @@ jobs:
       - name: Install Dependencies
         run: pip install torch safetensors numpy pyinstaller customtkinter
 
-      # 2. ПРЯМАЯ УПАКОВКА (Без капризов с путями)
+      # 2. УПАКОВКА (Ищем файлы в текущем корне)
       - name: Bundle GUI Application
         shell: pwsh
         run: |
-          # Копируем всё в одну папку "build_zone" для идеального качества сборки
-          New-Item -ItemType Directory -Path "./build_zone"
-          Copy-Item "./VCORE_GPU.exe" -Destination "./build_zone/VCORE_GPU.exe"
-          Copy-Item "./VCORE_CPU.exe" -Destination "./build_zone/VCORE_CPU.exe"
-          Copy-Item "./gui_v149.py" -Destination "./build_zone/gui_v149.py"
-          
-          cd build_zone
           pyinstaller --onefile --noconsole `
             --exclude-module matplotlib --exclude-module notebook --exclude-module PIL `
             --exclude-module huggingface_hub `
@@ -60,4 +53,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: VCORE_v149_FINAL_READY
-          path: build_zone/dist/Markov_Shield_v149_SIMS.exe
+          path: dist/Markov_Shield_v149_SIMS.exe
