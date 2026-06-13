@@ -12,25 +12,33 @@
 
 cmake_minimum_required(VERSION 3.18)
 
-# Сначала инициализируем только CXX, чтобы избежать мгновенного вылета
+# Инициализируем только CXX. Это КРИТИЧНО, чтобы избежать ошибки 0x2 в начале.
 project(LinearSelectorLab LANGUAGES CXX)
 
-# Включаем CUDA отдельно. Это позволит CMake подхватить пути, заданные в YAML
-enable_language(CUDA)
+# Вручную указываем пути к CUDA, так как автоматика на GitHub Actions ломается
+set(CUDA_PATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8")
+include_directories("${CUDA_PATH}/include")
+link_directories("${CUDA_PATH}/lib/x64")
 
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+# Пытаемся включить CUDA. Если она не подхватится автоматом, мы слинкуем её вручную ниже.
+enable_language(CUDA OPTIONAL)
+
+if(CMAKE_CUDA_COMPILER)
+    message(STATUS "[V-CORE]: CUDA Compiler found: ${CMAKE_CUDA_COMPILER}")
     set(CMAKE_CUDA_ARCHITECTURES 75)
-endif()
-
-add_executable(LinearSelectorBenchmark 
-    test_core.cpp 
-    LinearSelector.cu
-)
-
-if(MSVC)
+    
+    add_executable(LinearSelectorBenchmark 
+        test_core.cpp 
+        LinearSelector.cu
+    )
+    
     target_link_libraries(LinearSelectorBenchmark PRIVATE CUDA::cudart)
 else()
-    target_link_libraries(LinearSelectorBenchmark PRIVATE cuda cudart)
+    # ЭКСТРЕМАЛЬНЫЙ ВАРИАНТ: Если enable_language всё равно не сработал
+    message(WARNING "[V-CORE]: CUDA not enabled via CMake, attempting manual link...")
+    add_executable(LinearSelectorBenchmark test_core.cpp)
+    # Линкуем библиотеку CUDA напрямую по пути
+    target_link_libraries(LinearSelectorBenchmark PRIVATE "${CUDA_PATH}/lib/x64/cudart.lib")
 endif()
 
 set_target_properties(LinearSelectorBenchmark PROPERTIES
