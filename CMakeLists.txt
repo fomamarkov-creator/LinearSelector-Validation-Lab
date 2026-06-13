@@ -1,4 +1,4 @@
-# 
+#
 # Copyright (C) 2026 Efim Sergeevich Markov (ef.87@mail.ru)
 # Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 # 
@@ -12,34 +12,28 @@
 
 cmake_minimum_required(VERSION 3.18)
 
-# Убираем CUDA из основной строки, чтобы не было ошибки при инициализации
+# Сначала инициализируем только CXX, чтобы избежать мгновенного вылета
 project(LinearSelectorLab LANGUAGES CXX)
 
-# Включаем CUDA отдельно — это позволит нам передать пути из YAML
-enable_language(CUDA OPTIONAL)
+# Включаем CUDA отдельно. Это позволит CMake подхватить пути, заданные в YAML
+enable_language(CUDA)
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 75)
 endif()
 
-# Проверяем, удалось ли включить CUDA
-if(CMAKE_CUDA_COMPILER)
-    add_executable(LinearSelectorBenchmark 
-        test_core.cpp 
-        LinearSelector.cu
-    )
-    
-    if(MSVC)
-        target_link_libraries(LinearSelectorBenchmark PRIVATE CUDA::cudart)
-    else()
-        target_link_libraries(LinearSelectorBenchmark PRIVATE cuda cudart)
-    endif()
+add_executable(LinearSelectorBenchmark 
+    test_core.cpp 
+    LinearSelector.cu
+)
 
-    set_target_properties(LinearSelectorBenchmark PROPERTIES
-        CUDA_SEPARABLE_COMPILATION OFF
-        CUDA_RESOLVE_DEVICE_SYMBOLS OFF
-    )
-    message(STATUS "[V-CORE]: CUDA enabled successfully.")
+if(MSVC)
+    target_link_libraries(LinearSelectorBenchmark PRIVATE CUDA::cudart)
 else()
-    message(FATAL_ERROR "[V-CORE ERROR]: CUDA compiler not found. Check your YAML paths.")
+    target_link_libraries(LinearSelectorBenchmark PRIVATE cuda cudart)
 endif()
+
+set_target_properties(LinearSelectorBenchmark PROPERTIES
+    CUDA_SEPARABLE_COMPILATION OFF
+    CUDA_RESOLVE_DEVICE_SYMBOLS OFF
+)
