@@ -25,15 +25,16 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # ШАГ 1: Компилируем ядро с флагом-взломщиком
+      # ШАГ 1: Компилируем ядро с двойным взломом защиты
       - name: Compile CUDA Core
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
+          # Добавляем макрос _ALLOW_COMPILER_AND_STL_VERSION_MISMATCH для обхода STL1002
           & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
             -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
             -allow-unsupported-compiler `
-            --compiler-options "/O2 /MD /EHsc"
+            --compiler-options "/O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
       # ШАГ 2: Собираем основной EXE
       - name: Link Final Benchmark
@@ -41,7 +42,7 @@ jobs:
         run: |
           $cudaLib = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64"
           $cudaInc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include"
-          cl.exe /O2 /MD /EHsc test_core.cpp LinearSelector.obj `
+          cl.exe /O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH test_core.cpp LinearSelector.obj `
             /I"$cudaInc" `
             /link /LIBPATH:"$cudaLib" cudart.lib `
             /OUT:LinearSelectorBenchmark.exe
