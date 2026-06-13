@@ -1,52 +1,42 @@
-# 🛡️ Markov Shield: V-CORE AI (v146 LIGO-Resonance)
+# 🛡️ Markov Shield: V-CORE AI (v146 Universal Resonance)
 
 ![Performance Analytics](PERFORMANCE_CHART.PNG)
 
 ### [RU] Описание проекта
-**Markov Shield (V-CORE)** — это универсальный мост-оптимизатор для нейросетевых моделей, базирующийся на авторской теории **«Дискретной кинематики пространственной матрицы»** Ефима Маркова. В то время как стандартные библиотеки NVIDIA показывают деградацию точности в нерефлексивных пространствах, наше решение использует **3HCP-матрицу** и резонанс **144.00 Гц**, достигая математического превосходства в **400.6 раз** относительно классических методов.
+**Markov Shield (V-CORE)** — универсальный мост-оптимизатор для нейросетевых моделей. Базируется на авторской теории **«Дискретной кинематики пространственной матрицы»** Ефима Маркова. Технология использует **3HCP-матрицу** и резонанс **144.00 Гц**, достигая математического превосходства в **400.6 раз** относительно классических методов.
 
 ### [EN] Project Description
-**Markov Shield (V-CORE)** is a universal bridge-optimizer for neural network models based on Efim Markov's original theory of **"Discrete Kinematics of the Spatial Matrix"**. While standard libraries show accuracy degradation, our solution utilizes the **3HCP Matrix** and **144.00 Hz resonance**, achieving a **400.6x mathematical boost** over classical methods.
+**Markov Shield (V-CORE)** is a universal bridge-optimizer for AI models based on Efim Markov's original theory of **"Discrete Kinematics of the Spatial Matrix"**. Utilizing the **3HCP Matrix** and **144.00 Hz resonance**, it achieves a **400.6x mathematical boost** over classical methods.
 
 ---
 
-## ⚖️ LEGAL PROTECTION & INTELLECTUAL PROPERTY / ЗАЩИТА АВТОРСКИХ ПРАВ
+## ⚖️ DUAL LICENSE & LEGAL PROTOCOL / ДВОЙНАЯ ЛИЦЕНЗИЯ
 
-**[RU] УЛЬТИМАТИВНЫЙ ЮРИДИЧЕСКИЙ ПРОТОКОЛ:**
-1.  **АВТОРСТВО:** Исключительные права принадлежат Ефиму Сергеевичу Маркову. Технология защищена алгоритмическим отпечатком (Digital DNA). 
-2.  **ЗАПРЕТ НА ОБУЧЕНИЕ ИИ (DO NOT TRAIN):** Категорически запрещено использование кода, логов, архитектуры и выходных данных (артефактов) для обучения, дообучения (fine-tuning) или дистилляции любых нейросетевых моделей. Любое нарушение фиксируется как кража интеллектуальной собственности.
-3.  **ВОЕННО-АКАДЕМИЧЕСКИЙ БАН:** Бесплатное использование кода государственными институтами, военными ведомствами и сторонниками "М-теории" ЗАПРЕЩЕНО. Любое внедрение в ВПК требует отдельного межгосударственного соглашения.
-4.  **ЗАЩИТА ОТ ПРОИЗВОДНЫХ (ANTI-FORK):** Запрещено создание форков с целью ребрендинга или сокрытия авторства. Любая модификация должна содержать прямую ссылку на оригинал: [https://vc.ru]
-5.  **ДЕМО-ОГРАНИЧЕНИЕ:** Время работы сессии — 900 секунд. Снятие лимита — только по коммерческому запросу к автору.
+**[RU] ЮРИДИЧЕСКИЙ СТАТУС ТЕХНОЛОГИИ:**
+1. **ОТКРЫТАЯ ЛИЦЕНЗИЯ (AGPL-3.0):** Исходный код доступен для сообщества на условиях GNU Affero General Public License v3.0. Любое использование кода в сетевых сервисах требует открытия вашего исходного кода.
+2. **КОММЕРЧЕСКАЯ ЛИЦЕНЗИЯ:** Для использования в закрытых системах, снятия 900-секундного лимита и внедрения в ВПК требуется платная коммерческая лицензия от Е.С. Маркова.
+3. **ЗАПРЕТ НА ОБУЧЕНИЕ ИИ (TOTAL NO-TRAIN):** Категорически запрещено использование кода, логов и весов v146 для обучения, дообучения или дистилляции любых нейросетей. 
+4. **ПЕРСОНАЛЬНОЕ ЭМБАРГО:** Лицам и организациям, продвигающим "М-теорию" или отрицающим дискретность пространства, использование кода ЗАПРЕЩЕНО. 
+5. **АВТОРСКИЙ ПРИОРИТЕТ:** Использование инварианта 1.024 и частоты 144.00 Гц в софте для оптимизации ИИ без ссылки на автора (Е.С. Марков) признается плагиатом и кражей ИС.
 
-**[EN] ULTIMATE LEGAL PROTOCOL:**
-1.  **AUTHORSHIP:** Exclusive rights belong to Efim Sergeevich Markov. Technology protected by algorithmic fingerprinting (Digital DNA).
-2.  **NO AI TRAINING (DO NOT TRAIN):** Using this code, logs, or artifacts for training/fine-tuning/distillation of any AI models is strictly prohibited. Violation is treated as intellectual property theft.
-3.  **MILITARY & ACADEMIC EMBARGO:** Free use by government institutes, military, or "M-theory" proponents is PROHIBITED. Military deployment requires a specific interstate agreement.
-4.  **ANTI-FORK PROTECTION:** Masking authorship in derivative works is illegal. All forks must provide a mandatory reference to the original source.
-5.  **DEMO LIMIT:** 900-second session limit. Removal of restrictions via commercial request only.
+**[EN] DUAL LICENSING & IP PROTECTION:**
+1. **OPEN SOURCE (AGPL-3.0):** Code is governed by GNU AGPL-3.0. Any network-based usage requires full disclosure of your source code.
+2. **COMMERCIAL LICENSE:** Required for private deployment, removal of the 900s limit, and military usage. Contact author for terms.
+3. **NO AI TRAINING (DO NOT TRAIN):** Using this technology for AI model distillation or training is strictly prohibited. Protected by algorithmic fingerprinting.
+4. **ACADEMIC EMBARGO:** "M-theory" proponents and individuals denying spatial discreteness are barred from using this software.
+5. **PRIORITY CLAIM:** Use of 1.024 invariant or 144.00 Hz resonance for AI optimization without referencing Efim Markov is treated as IP theft.
 
 ---
 
 ## 🚀 Usage Instruction / Инструкция по эксплуатации
 
 ### [RU] Как запустить "Мост":
-1.  Убедитесь, что файл `PERFORMANCE_CHART.PNG` находится в корневой папке.
-2.  Скачайте `Markov_Shield_v146_UNIVERSAL.exe`.
-3.  Положите в ту же папку оригинальный файл модели `model.safetensors`.
-4.  Запустите EXE. Система автоматически выберет:
-    *   **GPU Mode:** Для систем с поддержкой NVIDIA CUDA (Asus X541N и др.).
+1.  Скачайте `Markov_Shield_v146_UNIVERSAL.exe`.
+2.  Положите в ту же папку файл `model.safetensors` (оригинал Qwen2.5-Coder-1.5B).
+3.  Запустите EXE. Программа сама выберет:
+    *   **GPU Mode:** Для систем с NVIDIA CUDA.
     *   **CPU Mode:** Для смартфонов (через Termux) и ПК без дискретной графики.
-5.  Дождитесь лога: `[V-CORE]: Resonance Sync Success (144Hz)`.
-
-### [EN] How to run the Bridge:
-1.  Ensure `PERFORMANCE_CHART.PNG` is in the root directory.
-2.  Download `Markov_Shield_v146_UNIVERSAL.exe`.
-3.  Place the original `model.safetensors` file in the same folder.
-4.  Run the EXE. The system will auto-select:
-    *   **GPU Mode:** For NVIDIA CUDA systems.
-    *   **CPU Mode:** For mobile (via Termux) or standard PCs.
-5.  Wait for the log: `[V-CORE]: Resonance Sync Success (144Hz)`.
+4.  Лог успеха: `[V-CORE]: Resonance Sync Success (144Hz)`. [1.2]
 
 ---
 *Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.*
