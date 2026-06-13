@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v146 UNIVERSAL (Direct Files Edition)
+# V-CORE v147 STATIC & MOBILE (Resonance 144Hz)
 
-name: V-CORE v146 UNIVERSAL BUILDER
+name: V-CORE v147 STATIC BUILDER
 
 on:
   push:
@@ -25,26 +25,37 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # СБОРКА 1: GPU Версия
-      - name: Build GPU Version
+      # СБОРКА 1: GPU СТАТИЧЕСКАЯ (Все DLL внутри!)
+      - name: Build Static GPU Version
         shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj -allow-unsupported-compiler --compiler-options "/O2 /MD /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
-          cl.exe /O2 /MD /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart.lib /NODEFAULTLIB:LIBCMT /OUT:VCORE_GPU.exe
+          # Компилируем со статическим рантаймом /MT
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
+            -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            -allow-unsupported-compiler `
+            --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
 
-      # СБОРКА 2: CPU Версия
-      - name: Build CPU Version
+          # Линкуем со статической библиотекой CUDA (cudart_static.lib)
+          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp LinearSelector.obj `
+            /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" `
+            /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH `
+            /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
+            cudart_static.lib /OUT:VCORE_v147_STATIC_GPU.exe
+
+      # СБОРКА 2: CPU Универсальная (Для Realme и ПК без NVIDIA)
+      - name: Build Mobile/CPU Version
         shell: pwsh
         run: |
-          cl.exe /O2 /MD /EHsc test_core.cpp /OUT:VCORE_CPU.exe
+          cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_v147_MOBILE_CPU.exe
 
-      # ГАРАНТИРОВАННАЯ ВЫГРУЗКА БЕЗ ПИЗОНОВСКИХ ОШИБОК
-      - name: Upload All Components
+      # ВЫГРУЗКА АРТЕФАКТОВ
+      - name: Upload V-CORE v147
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v146_READY_TO_RUN
+          name: VCORE_v147_FINAL_PACK
           path: |
-            VCORE_GPU.exe
-            VCORE_CPU.exe
+            VCORE_v147_STATIC_GPU.exe
+            VCORE_v147_MOBILE_CPU.exe
             bridge_compressor.py
+            README.md
