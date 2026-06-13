@@ -40,27 +40,24 @@ jobs:
           $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
           $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
           
-          # Динамический поиск пути к Visual Studio
-          $vsPath = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          $targetPath = Join-Path $vsPath "MSBuild\Microsoft\VC\v170\BuildCustomizations"
+          # Находим актуальный путь к VS
+          $vsPath = vswhere -latest -property installationPath
+          # Динамически определяем путь к папке настроек сборки
+          $targetPath = Get-ChildItem -Path "$vsPath\MSBuild\Microsoft\VC" -Filter "v*" | 
+                        Sort-Object Name -Descending | 
+                        Select-Object -First 1 | 
+                        ForEach-Object { Join-Path $_.FullName "BuildCustomizations" }
+
           $sourcePath = "$env:CUDA_PATH\extras\visual_studio_integration\MSBuildExtensions"
           
-          Write-Host "Searching for Visual Studio at: $vsPath"
-          Write-Host "Target BuildCustomizations path: $targetPath"
-
-          # Создаем папку, если её нет, и копируем файлы
           if (Test-Path $sourcePath) {
-              if (!(Test-Path $targetPath)) { 
-                  New-Item -ItemType Directory -Path $targetPath -Force 
-              }
+              if (!(Test-Path $targetPath)) { New-Item -ItemType Directory -Path $targetPath -Force }
               Copy-Item "$sourcePath\*" -Destination $targetPath -Force
-              Write-Host "Successfully integrated CUDA into Visual Studio."
-          } else {
-              Write-Error "CUDA MSBuild extensions not found!"
+              Write-Host "CUDA integrated into: $targetPath"
           }
 
-          # Конфигурация CMake
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
+          # Запуск CMake БЕЗ указания конкретной версии VS (-G), он сам найдет нужную
+          cmake -S . -B build -A x64 `
           -DCMAKE_CUDA_ARCHITECTURES=75 `
           -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe"
 
