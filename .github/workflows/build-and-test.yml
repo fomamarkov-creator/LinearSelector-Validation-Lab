@@ -10,35 +10,39 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022 # Фиксируем версию ОС, где точно есть VS 2022
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install CUDA via Chocolatey
-        # Chocolatey надежнее прописывает пути в реестр Windows
-        run: choco install cuda --version=11.8.0.20230207 -y
+      - name: Install CUDA and Tools
+        # Ставим CUDA и Ninja через choco для стабильности путей
+        run: |
+          choco install cuda --version=11.8.0.20230207 -y
+          choco install ninja -y
 
-      - name: Set up MSVC
+      - name: Set up MSVC 2022
+        # Явно говорим использовать 2022, а не 2025/2026
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          toolset: '14.3' 
 
       - name: Install Python Dependencies
-        run: pip install torch safetensors huggingface_hub numpy pyinstaller choco install ninja -y
+        run: pip install torch safetensors huggingface_hub numpy pyinstaller
 
       - name: Configure CMake
         shell: pwsh
         run: |
-          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
-          $env:CUDA_PATH = $cudaPath
-          $env:PATH = "$cudaPath\bin;$env:PATH"
+          $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
+          $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
           
+          # Указываем CMake игнорировать системные проверки и брать то, что мы даем
           cmake -S . -B build -G "Ninja" `
           -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_CUDA_COMPILER="$cudaPath\bin\nvcc.exe" `
-          -DCMAKE_C_COMPILER="cl.exe" `
-          -DCMAKE_CXX_COMPILER="cl.exe" `
-          -DCMAKE_CUDA_ARCHITECTURES=75
+          -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe" `
+          -DCMAKE_CUDA_ARCHITECTURES=75 `
+          -DCMAKE_CUDA_FLAGS="-allow-unsupported-compiler" # Хак для новых VS
 
       - name: Build V144 Core Binary
         run: cmake --build build --config Release
