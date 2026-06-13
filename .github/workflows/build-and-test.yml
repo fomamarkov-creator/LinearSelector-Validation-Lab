@@ -1,53 +1,41 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v149 - TWO MONOLITHS (GPU & CPU)
+# V-CORE v150 - THE MASTER LINK (Sims Style)
 
-name: V-CORE v149 DUAL BUILDER
+name: V-CORE v150 MASTER BUILDER
 
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: windows-2022
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install CUDA Toolkit
-        uses: Jimver/cuda-toolkit@v0.2.16
+      - uses: actions/checkout@v4
+      - uses: Jimver/cuda-toolkit@v0.2.16
         with:
           cuda: '11.8.0'
-          method: 'network'
+      - uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      # СБОРКА ЯДЕР (Статика)
+      # 1. Собираем ядра
       - name: Build Binary Cores
-        shell: pwsh
         run: |
           $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj --compiler-options "/O2 /MT /EHsc /D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH"
-          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib Gdi32.lib Shell32.lib /OUT:VCORE_GPU.exe
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o ./LinearSelector.obj --compiler-options "/O2 /MT /EHsc"
+          cl.exe /O2 /MT /EHsc /DUSE_CUDA test_core.cpp ./LinearSelector.obj /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" /link /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" cudart_static.lib Kernel32.lib User32.lib /OUT:VCORE_GPU.exe
           cl.exe /O2 /MT /EHsc test_core.cpp /OUT:VCORE_CPU.exe
 
-      - name: Install Dependencies
-        run: pip install torch safetensors numpy pyinstaller customtkinter
-
-      # Упаковка ДВУХ ОТДЕЛЬНЫХ EXE
-      - name: Bundle Dual Monoliths
-        shell: pwsh
+      # 2. Собираем только интерфейс
+      - name: Build GUI
         run: |
-          # 1. Упаковка GPU версии
-          pyinstaller --onefile --noconsole --add-binary "VCORE_GPU.exe;." --name "VCORE_v149_GPU_SIMS" gui_v149.py
-          # 2. Упаковка CPU версии
-          pyinstaller --onefile --noconsole --add-binary "VCORE_CPU.exe;." --name "VCORE_v149_CPU_SIMS" gui_v149.py
+          pip install torch safetensors numpy pyinstaller customtkinter
+          pyinstaller --onefile --noconsole --name "Markov_Sims_UI" gui_v149.py
 
-      - name: Upload Dual Pack
+      # 3. Выгружаем ВСЁ в один архив
+      - name: Upload Final Pack
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v149_DUAL_EXE
-          path: dist/*.exe
+          name: VCORE_v150_FINAL_PACK
+          path: |
+            VCORE_GPU.exe
+            VCORE_CPU.exe
+            dist/Markov_Sims_UI.exe
+            README.md
