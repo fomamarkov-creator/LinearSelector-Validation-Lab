@@ -10,64 +10,53 @@ on:
 
 jobs:
   build:
-    runs-on: windows-2022 # Фиксируем версию ОС, где точно есть VS 2022
+    runs-on: windows-2022
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install CUDA and Tools
-        # Ставим CUDA и Ninja через choco для стабильности путей
-        run: |
-          choco install cuda --version=11.8.0.20230207 -y
-          choco install ninja -y
+      - name: Install CUDA
+        run: choco install cuda --version=11.8.0.20230207 -y
 
-      - name: Set up MSVC 2022
-        # Явно говорим использовать 2022, а не 2025/2026
+      - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
-        with:
-          toolset: '14.3' 
 
-      - name: Install Python Dependencies
-        run: pip install torch safetensors huggingface_hub numpy pyinstaller
-
-      - name: Configure CMake
+      - name: Manual Super-Build (No CMake Errors)
         shell: pwsh
         run: |
-          $env:CUDA_PATH = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
-          $env:PATH = "$env:CUDA_PATH\bin;$env:PATH"
+          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8"
+          $nvcc = "$cudaPath\bin\nvcc.exe"
           
-          # Указываем CMake игнорировать системные проверки и брать то, что мы даем
-          cmake -S . -B build -G "Ninja" `
-          -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_CUDA_COMPILER="$env:CUDA_PATH\bin\nvcc.exe" `
-          -DCMAKE_CUDA_ARCHITECTURES=75 `
-          -DCMAKE_CUDA_FLAGS="-allow-unsupported-compiler" # Хак для новых VS
+          # 1. Компилируем ядро CUDA напрямую в объектный файл
+          & $nvcc -arch=sm_75 -c LinearSelector.cu -o LinearSelector.obj `
+            -I"$cudaPath\include" --compiler-options "/O2 /MD"
 
-      - name: Build V144 Core Binary
-        run: cmake --build build --config Release
+          # 2. Компилируем C++ интерфейс и линкуем всё вместе одним ударом
+          cl.exe /O2 /MD test_core.cpp LinearSelector.obj `
+            /I"$cudaPath\include" `
+            /link /LIBPATH:"$cudaPath\lib\x64" cudart.lib `
+            /OUT:LinearSelectorBenchmark.exe
 
       - name: Execute Exabit Optimization
-        shell: pwsh
         run: |
-          Copy-Item "bridge_compressor.py" -Destination "build/" -Force
-          cd build
+          # Файл уже в корне, никуда копировать не надо
+          pip install torch safetensors huggingface_hub numpy pyinstaller
           python bridge_compressor.py
 
       - name: Bundle Autonomous EXE
         run: |
           pyinstaller --onefile `
-          --add-binary "build/LinearSelectorBenchmark.exe;." `
-          --name "Markov_Shield_v144" `
-          build/bridge_compressor.py
+            --add-binary "LinearSelectorBenchmark.exe;." `
+            --name "Markov_Shield_v144" `
+            bridge_compressor.py
 
-      - name: Create Clean GitHub Release
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v144-exabit-final
-          name: "Markov Shield AI v144 (Exabit EXE)"
           files: |
             dist/Markov_Shield_v144.exe
-            build/v144_model.safetensors
+            v144_model.safetensors
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
