@@ -1,12 +1,9 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v151 - THE FINAL MONOLITH
+# V-CORE v152 - REAL ENGINE ASSEMBLY
 
-name: V-CORE v151 FINAL
+name: V-CORE v152 FINAL
 
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 
 jobs:
   build:
@@ -16,17 +13,16 @@ jobs:
       - uses: Jimver/cuda-toolkit@v0.2.16
         with:
           cuda: '11.8.0'
-      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Install Dependencies
+        run: pip install torch safetensors numpy pyinstaller customtkinter
 
-      - name: Build Core
-        shell: pwsh
+      # СОБИРАЕМ РЕАЛЬНЫЙ ДВИЖОК (Без test_core.cpp)
+      - name: Bundle Real Engine
         run: |
-          $nvcc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin\nvcc.exe"
-          # Компилируем всё в один MARKOV_CORE.exe
-          & $nvcc -arch=sm_75 -o MARKOV_CORE.exe LinearSelector.cu test_core.cpp -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include" -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" -lcudart --compiler-options "/O2 /MT /EHsc"
+          pyinstaller --onefile --noconsole --name "MARKOV_ENGINE" bridge_compressor.py
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_FINAL_ASSEMBLY
-          path: MARKOV_CORE.exe
+          name: VCORE_v152_REAL_ENGINE
+          path: dist/MARKOV_ENGINE.exe
