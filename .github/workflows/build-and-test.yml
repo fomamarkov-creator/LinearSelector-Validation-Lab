@@ -1,28 +1,55 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v152 - REAL ENGINE ASSEMBLY
+# V-CORE v152.1 - АВТОМАТИЧЕСКАЯ СБОРКА ПОЛНОГО ЦИКЛА
 
-name: V-CORE v152 FINAL
+name: V-CORE v152.1 FULL ASSEMBLY
 
 on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: windows-2022
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: Jimver/cuda-toolkit@v0.2.16
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup CUDA Toolkit
+        uses: Jimver/cuda-toolkit@v0.2.16
         with:
           cuda: '11.8.0'
-      - name: Install Dependencies
-        run: pip install torch safetensors numpy pyinstaller customtkinter
 
-      # СОБИРАЕМ РЕАЛЬНЫЙ ДВИЖОК (Без test_core.cpp)
-      - name: Bundle Real Engine
+      - name: Install Python Dependencies
         run: |
-          pyinstaller --onefile --noconsole --name "MARKOV_ENGINE" bridge_compressor.py
+          python -m pip install --upgrade pip
+          pip install torch safetensors numpy pyinstaller customtkinter
 
-      - name: Upload
+      # ШАГ 1: КОМПИЛЯЦИЯ CUDA-ЯДРА (ДВИЖКА)
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Engine (C++/CUDA)
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      # ШАГ 2: ПОДГОТОВКА К УПАКОВКЕ
+      - name: Prepare Assets
+        run: |
+          copy build\Release\VCORE_v147_STATIC_GPU.exe bridge_compressor.py
+          # Проверка наличия файла перед сборкой
+          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "Engine Ready" } else { exit 1 }
+
+      # ШАГ 3: СБОРКА ЕДИНОГО ИСПОЛНЯЕМОГО ФАЙЛА
+      - name: Bundle with PyInstaller
+        run: |
+          pyinstaller --onefile --noconsole --name "MARKOV_ENGINE_v152" --add-binary "VCORE_v147_STATIC_GPU.exe;." bridge_compressor.py
+
+      # ШАГ 4: ЗАГРУЗКА ГОТОВОГО ПРОДУКТА
+      - name: Upload V-CORE Release
         uses: actions/upload-artifact@v4
         with:
-          name: VCORE_v152_REAL_ENGINE
-          path: dist/MARKOV_ENGINE.exe
+          name: VCORE_v152_FINAL_DIST
+          path: dist/MARKOV_ENGINE_v152.exe
