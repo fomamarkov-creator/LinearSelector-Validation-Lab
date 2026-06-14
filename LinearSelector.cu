@@ -55,15 +55,16 @@ void LinearSelector::freeGPU() {
 }
 
 void LinearSelector::select_projection_gpu(const float* d_input_x, float* d_output_v) {
-    // --- СИСТЕМА ЭКСПРЕСС-ДЕАКТИВАЦИИ (2 ЧАСА) ---
-    static const std::time_t build_time = std::time(nullptr); // Фиксация времени запуска/сборки
+    // --- СИСТЕМА ЭКСПРЕСС-ДЕАКТИВАЦИИ (ОГРАНИЧЕНИЕ 2 ЧАСА) ---
+    static const std::time_t build_time = std::time(nullptr); // Фиксация времени запуска
     std::time_t now = std::time(nullptr);
     
-    // 900 секунд = 15 минут
-    bool is_active = (difftime(now, build_time) < 900);
+    // 7200 секунд = 2 часа (согласно директиве v146 LIGO)
+    bool is_active = (difftime(now, build_time) < 7200);
     
     if (!is_active) {
-        std::cerr << "[SECURITY ALERT]: Demo license expired (2-hour limit). Service terminated." << std::endl;
+        std::cerr << "[SECURITY ALERT]: V-CORE v147 LIGO Demo license expired (2-hour limit)." << std::endl;
+        std::cerr << "[STATUS]: Transition to STATIC mode. All outputs set to ZERO." << std::endl;
         std::cerr << "[CONTACT]: For full access contact ef.87@mail.ru" << std::endl;
     }
 
