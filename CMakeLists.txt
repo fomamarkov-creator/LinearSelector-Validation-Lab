@@ -4,15 +4,17 @@
 cmake_minimum_required(VERSION 3.18)
 project(LinearSelectorLab LANGUAGES CXX CUDA)
 
+# Настройка архитектуры
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 75)
 endif()
 
+# Поиск CUDA
 find_package(CUDAToolkit REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# ЗАМЕНА: Теперь используем main.cpp вместо удаленного test_core.cpp
+# Собираем движок из нового main.cpp и CUDA-ядра
 add_executable(LinearSelectorBenchmark 
     main.cpp 
     LinearSelector.cu
