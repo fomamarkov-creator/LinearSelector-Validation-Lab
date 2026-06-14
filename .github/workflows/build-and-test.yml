@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v152.3 - EXTREME MANUAL ASSEMBLY (LIGO PROTOCOL)
+# V-CORE v152.5 - DIRECT NVCC ASSEMBLY (ULTIMATE BYPASS)
 
-name: V-CORE v152.3 FULL ASSEMBLY
+name: V-CORE v152.5 FULL ASSEMBLY
 
 on: [push, workflow_dispatch]
 
@@ -23,28 +23,28 @@ jobs:
           python -m pip install --upgrade pip
           pip install torch safetensors numpy pyinstaller customtkinter huggingface_hub
 
-      # ШАГ 1: ЖЕСТКАЯ КОНФИГУРАЦИЯ CMAKE С УКАЗАНИЕМ ПУТИ К NVCC
-      - name: Configure CMake
+      # ШАГ 1: ПРЯМАЯ КОМПИЛЯЦИЯ ЧЕРЕЗ NVCC (Обход ошибок CMake)
+      - name: Build Engine with NVCC
         run: |
-          mkdir build
-          cd build
-          # Указываем путь к компилятору напрямую, чтобы избежать ошибки 0x2
-          cmake .. -DCMAKE_BUILD_TYPE=Release `
-          -DCMAKE_CUDA_COMPILER="C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8/bin/nvcc.exe"
+          # Задаем пути вручную
+          $env:PATH += ";C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin"
+          $cuda_lib = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudart.lib"
+          $cuda_inc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include"
+          
+          # Компилируем .cu и .cpp файлы в один экзешник
+          nvcc -O3 main.cpp LinearSelector.cu -o VCORE_v147_STATIC_GPU.exe `
+          -I $cuda_inc -L "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
+          -lcudart -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
+          
+          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "V-CORE ENGINE BUILT DIRECTLY" } else { exit 1 }
 
-      # ШАГ 2: СБОРКА НАТИВНОГО ДВИЖКА
-      - name: Build Engine (C++/CUDA)
-        run: |
-          cd build
-          cmake --build . --config Release
-
-      # ШАГ 3: ПОДГОТОВКА И ПРОВЕРКА БИНАРНИКА
+      # ШАГ 2: ПОДГОТОВКА И ПРОВЕРКА
       - name: Prepare Assets
         run: |
-          copy build\Release\VCORE_v147_STATIC_GPU.exe .
-          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "V-CORE ENGINE READY" } else { exit 1 }
+          # Файл уже в корне после прямой компиляции
+          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "Ready for bundling" }
 
-      # ШАГ 4: УПАКОВКА В ЕДИНЫЙ EXE (ДЛЯ ASUS X541N)
+      # ШАГ 3: УПАКОВКА В ЕДИНЫЙ EXE (ДЛЯ ASUS X541N)
       - name: Bundle with PyInstaller
         run: |
           pyinstaller --onefile --noconsole --name "MARKOV_ENGINE_v152" `
@@ -52,7 +52,7 @@ jobs:
           --hidden-import "huggingface_hub" `
           gui_v149.2.py
 
-      # ШАГ 5: ВЫГРУЗКА ГОТОВОГО РЕЛИЗА
+      # ШАГ 4: ВЫГРУЗКА ГОТОВОГО РЕЛИЗА
       - name: Upload V-CORE Release
         uses: actions/upload-artifact@v4
         with:
