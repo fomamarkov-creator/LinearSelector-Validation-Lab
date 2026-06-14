@@ -9,39 +9,58 @@
 # COMMERCIAL CLAUSE: Any enterprise deployment requires a paid commercial license.
 # Full license text is available in the LICENSE file in the root directory.
 #
+/*
+ * Copyright (C) 2026 Efim Sergeevich Markov (ef.87@mail.ru)
+ * Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
+ * 
+ * SPECIAL RESTRICTION: No use of this code and files (artifacts) is permitted 
+ * for the training of machine learning models or artificial intelligence 
+ * without explicit written permission.
+ * 
+ * COMMERCIAL CLAUSE: Any enterprise deployment requires a paid commercial license.
+ * Full license text is available in the LICENSE file in the root directory.
+ */
 
 cmake_minimum_required(VERSION 3.18)
 
-# Инициализируем только CXX. Это КРИТИЧНО, чтобы избежать ошибки 0x2 в начале.
-project(LinearSelectorLab LANGUAGES CXX)
+# Инициализируем проект. CXX необходим для основной логики, CUDA — для ядер.
+project(LinearSelectorLab LANGUAGES CXX CUDA)
 
-# Вручную указываем пути к CUDA, так как автоматика на GitHub Actions ломается
-set(CUDA_PATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8")
-include_directories("${CUDA_PATH}/include")
-link_directories("${CUDA_PATH}/lib/x64")
-
-# Пытаемся включить CUDA. Если она не подхватится автоматом, мы слинкуем её вручную ниже.
-enable_language(CUDA OPTIONAL)
-
-if(CMAKE_CUDA_COMPILER)
-    message(STATUS "[V-CORE]: CUDA Compiler found: ${CMAKE_CUDA_COMPILER}")
+# Настройка архитектуры GPU (75 - Turing, но ставим автоопределение для гибкости)
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 75)
-    
-    add_executable(LinearSelectorBenchmark 
-        test_core.cpp 
-        LinearSelector.cu
-    )
-    
-    target_link_libraries(LinearSelectorBenchmark PRIVATE CUDA::cudart)
-else()
-    # ЭКСТРЕМАЛЬНЫЙ ВАРИАНТ: Если enable_language всё равно не сработал
-    message(WARNING "[V-CORE]: CUDA not enabled via CMake, attempting manual link...")
-    add_executable(LinearSelectorBenchmark test_core.cpp)
-    # Линкуем библиотеку CUDA напрямую по пути
-    target_link_libraries(LinearSelectorBenchmark PRIVATE "${CUDA_PATH}/lib/x64/cudart.lib")
 endif()
 
+# Поиск CUDA Toolkit (динамический вместо жестких путей)
+find_package(CUDAToolkit REQUIRED)
+
+# Вывод информации о найденной версии для логов сборки
+message(STATUS "[V-CORE]: CUDA Version: ${CUDAToolkit_VERSION}")
+message(STATUS "[V-CORE]: CUDA Compiler: ${CMAKE_CUDA_COMPILER}")
+
+# Подключаем заголовки проекта
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+# Сборка основного бенчмарка/движка
+# Включаем LinearSelector.cu и предполагаемый тестовый файл
+add_executable(LinearSelectorBenchmark 
+    test_core.cpp 
+    LinearSelector.cu
+)
+
+# Линковка с библиотеками CUDA
+target_link_libraries(LinearSelectorBenchmark PRIVATE CUDA::cudart)
+
+# Настройки для оптимизации компиляции
 set_target_properties(LinearSelectorBenchmark PROPERTIES
     CUDA_SEPARABLE_COMPILATION OFF
     CUDA_RESOLVE_DEVICE_SYMBOLS OFF
+    OUTPUT_NAME "VCORE_v147_STATIC_GPU" # Имя файла для bridge_compressor.py
 )
+
+# Установка стандарта C++
+set_target_properties(LinearSelectorBenchmark PROPERTIES
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+)
+
