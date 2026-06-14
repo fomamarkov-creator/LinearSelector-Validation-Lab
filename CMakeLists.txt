@@ -6,8 +6,8 @@ cmake_minimum_required(VERSION 3.18)
 # Инициализируем ТОЛЬКО CXX. Это исключит ошибку поиска компилятора CUDA.
 project(LinearSelectorLab LANGUAGES CXX)
 
-# Ручное указание путей (совместимо с GitHub и твоим ПК)
-set(CUDA_PATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8")
+# Автоматическое определение путей для Google Colab (Linux)
+set(CUDA_PATH "/usr/local/cuda")
 include_directories("${CUDA_PATH}/include")
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -18,11 +18,11 @@ add_executable(LinearSelectorBenchmark
     LinearSelector.hpp
 )
 
-# Линкуем библиотеку напрямую. Если GPU нет, линковщик пропустит CUDA-символы.
-target_link_libraries(LinearSelectorBenchmark PRIVATE "${CUDA_PATH}/lib/x64/cudart.lib")
+# Линкуем Linux-версию библиотеки времени выполнения CUDA напрямую
+target_link_libraries(LinearSelectorBenchmark PRIVATE "${CUDA_PATH}/lib64/libcudart.so")
 
 set_target_properties(LinearSelectorBenchmark PROPERTIES
-    OUTPUT_NAME "VCORE_v147_STATIC_GPU"
+    OUTPUT_NAME "vcore_engine_linux"
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
 )
