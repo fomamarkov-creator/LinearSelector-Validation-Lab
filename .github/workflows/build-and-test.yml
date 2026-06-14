@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v152.1 - АВТОМАТИЧЕСКАЯ СБОРКА ПОЛНОГО ЦИКЛА
+# V-CORE v152.2 - CLOUD-INTEGRATED ASSEMBLY (LIGO PROTOCOL)
 
-name: V-CORE v152.1 FULL ASSEMBLY
+name: V-CORE v152.2 FULL ASSEMBLY
 
 on: [push, workflow_dispatch]
 
@@ -21,9 +21,10 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install torch safetensors numpy pyinstaller customtkinter
+          # Добавлена библиотека huggingface_hub для облачной синхронизации
+          pip install torch safetensors numpy pyinstaller customtkinter huggingface_hub
 
-      # ШАГ 1: КОМПИЛЯЦИЯ CUDA-ЯДРА (ДВИЖКА)
+      # ШАГ 1: КОМПИЛЯЦИЯ CUDA-ЯДРА (ДВИЖКА) С ПОДДЕРЖКОЙ AVX2/GPU
       - name: Configure CMake
         run: |
           mkdir build
@@ -35,19 +36,25 @@ jobs:
           cd build
           cmake --build . --config Release
 
-      # ШАГ 2: ПОДГОТОВКА К УПАКОВКЕ
+      # ШАГ 2: ПОДГОТОВКА БИНАРНЫХ АРТЕФАКТОВ
       - name: Prepare Assets
         run: |
-          copy build\Release\VCORE_v147_STATIC_GPU.exe bridge_compressor.py
-          # Проверка наличия файла перед сборкой
-          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "Engine Ready" } else { exit 1 }
+          # Копируем скомпилированный движок в корень к Python-скрипту
+          copy build\Release\VCORE_v147_STATIC_GPU.exe .
+          # Проверка успешности компиляции
+          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "Engine V-CORE Built Successfully" } else { exit 1 }
 
-      # ШАГ 3: СБОРКА ЕДИНОГО ИСПОЛНЯЕМОГО ФАЙЛА
+      # ШАГ 3: СБОРКА ЕДИНОГО ИСПОЛНЯЕМОГО ФАЙЛА (FULL OFFLINE + CLOUD)
+      # --add-binary включает CUDA-движок внутрь .exe файла
+      # --hidden-import гарантирует включение зависимостей HuggingFace
       - name: Bundle with PyInstaller
         run: |
-          pyinstaller --onefile --noconsole --name "MARKOV_ENGINE_v152" --add-binary "VCORE_v147_STATIC_GPU.exe;." bridge_compressor.py
+          pyinstaller --onefile --noconsole --name "MARKOV_ENGINE_v152" `
+          --add-binary "VCORE_v147_STATIC_GPU.exe;." `
+          --hidden-import "huggingface_hub" `
+          gui_v149.2.py
 
-      # ШАГ 4: ЗАГРУЗКА ГОТОВОГО ПРОДУКТА
+      # ШАГ 4: ВЫГРУЗКА ГОТОВОГО РЕЛИЗА
       - name: Upload V-CORE Release
         uses: actions/upload-artifact@v4
         with:
