@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Efim Sergeevich Markov. All rights reserved.
-# V-CORE v152.5 - DIRECT NVCC ASSEMBLY (ULTIMATE BYPASS)
+# V-CORE v152.6 - VS_ENVIRONMENT + DIRECT NVCC
 
-name: V-CORE v152.5 FULL ASSEMBLY
+name: V-CORE v152.6 FULL ASSEMBLY
 
 on: [push, workflow_dispatch]
 
@@ -18,33 +18,27 @@ jobs:
         with:
           cuda: '11.8.0'
 
+      # ШАГ: Активируем среду Visual Studio для доступа к cl.exe
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install torch safetensors numpy pyinstaller customtkinter huggingface_hub
 
-      # ШАГ 1: ПРЯМАЯ КОМПИЛЯЦИЯ ЧЕРЕЗ NVCC (Обход ошибок CMake)
+      # ШАГ 1: ПРЯМАЯ КОМПИЛЯЦИЯ (Теперь cl.exe в PATH благодаря шагу выше)
       - name: Build Engine with NVCC
         run: |
-          # Задаем пути вручную
-          $env:PATH += ";C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\bin"
-          $cuda_lib = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64\cudart.lib"
           $cuda_inc = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\include"
+          $cuda_lib = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64"
           
-          # Компилируем .cu и .cpp файлы в один экзешник
           nvcc -O3 main.cpp LinearSelector.cu -o VCORE_v147_STATIC_GPU.exe `
-          -I $cuda_inc -L "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.8\lib\x64" `
+          -I $cuda_inc -L $cuda_lib `
           -lcudart -D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH
           
-          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "V-CORE ENGINE BUILT DIRECTLY" } else { exit 1 }
+          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "V-CORE ENGINE BUILT" } else { exit 1 }
 
-      # ШАГ 2: ПОДГОТОВКА И ПРОВЕРКА
-      - name: Prepare Assets
-        run: |
-          # Файл уже в корне после прямой компиляции
-          if (Test-Path "VCORE_v147_STATIC_GPU.exe") { echo "Ready for bundling" }
-
-      # ШАГ 3: УПАКОВКА В ЕДИНЫЙ EXE (ДЛЯ ASUS X541N)
       - name: Bundle with PyInstaller
         run: |
           pyinstaller --onefile --noconsole --name "MARKOV_ENGINE_v152" `
@@ -52,7 +46,6 @@ jobs:
           --hidden-import "huggingface_hub" `
           gui_v149.2.py
 
-      # ШАГ 4: ВЫГРУЗКА ГОТОВОГО РЕЛИЗА
       - name: Upload V-CORE Release
         uses: actions/upload-artifact@v4
         with:
