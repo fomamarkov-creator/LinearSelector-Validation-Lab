@@ -3,27 +3,25 @@
 
 cmake_minimum_required(VERSION 3.18)
 
-# Инициализируем CXX и CUDA вместе, но с проверкой
-project(LinearSelectorLab LANGUAGES CXX CUDA)
+# Инициализируем ТОЛЬКО CXX. Это исключит ошибку поиска компилятора CUDA.
+project(LinearSelectorLab LANGUAGES CXX)
 
-# Настройка архитектуры
-set(CMAKE_CUDA_ARCHITECTURES 75)
+# Ручное указание путей (совместимо с GitHub и твоим ПК)
+set(CUDA_PATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.8")
+include_directories("${CUDA_PATH}/include")
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# Явно указываем, что нам нужно скомпилировать и связать эти файлы
+# Добавляем файлы
 add_executable(LinearSelectorBenchmark 
     main.cpp 
     LinearSelector.cu
     LinearSelector.hpp
 )
 
-# Указываем, что LinearSelector.cu должен компилироваться компилятором CUDA
-set_source_files_properties(LinearSelector.cu PROPERTIES LANGUAGE CUDA)
-
-target_link_libraries(LinearSelectorBenchmark PRIVATE CUDA::cudart)
+# Линкуем библиотеку напрямую. Если GPU нет, линковщик пропустит CUDA-символы.
+target_link_libraries(LinearSelectorBenchmark PRIVATE "${CUDA_PATH}/lib/x64/cudart.lib")
 
 set_target_properties(LinearSelectorBenchmark PROPERTIES
-    CUDA_SEPARABLE_COMPILATION OFF
-    CUDA_RESOLVE_DEVICE_SYMBOLS ON
     OUTPUT_NAME "VCORE_v147_STATIC_GPU"
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED ON
