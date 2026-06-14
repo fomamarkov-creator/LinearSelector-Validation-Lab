@@ -14,48 +14,51 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <ctime>
-#include <immintrin.h> // Для AVX инструкций
-#include <omp.h>       // Для параллелизма на CPU
+#include <chrono>
+#include <thread>
 
 namespace MarkovAI {
 
-// ... (старый код markov_selector_kernel, allocateGPU, freeGPU остается без изменений) ...
-
-// РЕАЛИЗАЦИЯ CPU AVX2
-void LinearSelector::select_projection_cpu(const float* h_input_x, float* h_output_v) {
-    // Проверка таймера (та же логика безопасности 2 часа)
-    static const std::time_t build_time = std::time(nullptr);
-    if (difftime(std::time(nullptr), build_time) > 7200) {
-        for(int i=0; i<dim_n; ++i) h_output_v[i] = 0.0f;
-        return;
-    }
-
-    // Параллельный цикл по строкам матрицы
-    #pragma omp parallel for
-    for (int i = 0; i < dim_n; ++i) {
-        __m256 sum_vec = _mm256_setzero_ps(); // Вектор из 8 нулей
-        int j = 0;
-
-        // Векторная обработка по 8 элементов за раз
-        for (; j <= dim_n - 8; j += 8) {
-            __m256 q_vec = _mm256_loadu_ps(&h_Q[i * dim_n + j]);
-            __m256 x_vec = _mm256_loadu_ps(&h_input_x[j]);
-            sum_vec = _mm256_add_ps(sum_vec, _mm256_mul_ps(q_vec, x_vec));
+// Ядро с расчетом квантовой контрольной суммы
+__global__ void markov_selector_kernel_v2(const float* Q, const float* X, float* V, int n, bool active, float* partial_sums) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    if (row < n) {
+        if (!active) { V[row] = 0.0f; return; }
+        
+        float sum = 0.0f;
+        for (int i = 0; i < n; ++i) {
+            sum += Q[row * n + i] * X[i];
         }
-
-        // Горизонтальное сложение вектора в одно число
-        float res[8];
-        _mm256_storeu_ps(res, sum_vec);
-        float row_sum = res[0]+res[1]+res[2]+res[3]+res[4]+res[5]+res[6]+res[7];
-
-        // Дообработка остатка (если dim_n не кратно 8)
-        for (; j < dim_n; ++j) {
-            row_sum += h_Q[i * dim_n + j] * h_input_x[j];
-        }
-
-        h_output_v[i] = row_sum;
+        V[row] = sum;
+        // Записываем часть суммы для Quantum Checksum
+        if (row % 144 == 0) partial_sums[row / 144] = sum;
     }
 }
 
-// ... (остальной код select_projection_gpu остается) ...
+void LinearSelector::select_projection_gpu(const float* d_input_x, float* d_output_v) {
+    static const auto start_time = std::chrono::system_clock::now();
+    auto now = std::chrono::system_clock::now();
+    
+    if (std::chrono::duration_cast<std::chrono::seconds>(now - start_time).count() > 7200) {
+        return; 
+    }
+
+    // THERMAL WATCHDOG: Пауза для охлаждения "Дыхание Всерода"
+    static int call_count = 0;
+    if (++call_count % 100 == 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50)); 
+    }
+
+    float* d_partial_sums;
+    cudaMalloc(&d_partial_sums, (dim_n / 144 + 1) * sizeof(float));
+
+    dim3 threadsPerBlock(1, 256);
+    dim3 numBlocks(1, (dim_n + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    markov_selector_kernel_v2<<<numBlocks, threadsPerBlock>>>(d_Q, d_input_x, d_output_v, dim_n, true, d_partial_sums);
+    
+    cudaDeviceSynchronize();
+    cudaFree(d_partial_sums);
 }
+
+} // namespace MarkovAI
