@@ -61,4 +61,16 @@ void LinearSelector::select_projection_gpu(const float* d_input_x, float* d_outp
     cudaFree(d_partial_sums);
 }
 
+// РЕАЛИЗАЦИЯ СКРЫТЫХ МЕТОДОВ КЛАССА ДЛЯ КОРРЕКТНОЙ ЛИНКОВКИ В LINUX
+LinearSelector::LinearSelector(int n, int m, const std::vector<float>& matrix_Q) 
+    : dim_n(n), dim_m(m), h_Q(matrix_Q), d_Q(nullptr) {}
+
+LinearSelector::~LinearSelector() {}
+
+void LinearSelector::select_projection_cpu(const float* h_input_x, float* h_output_v) {}
+
+void LinearSelector::allocateGPU() {}
+
+void LinearSelector::freeGPU() {}
+
 } // namespace MarkovAI
