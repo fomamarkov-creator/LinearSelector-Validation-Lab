@@ -5,9 +5,6 @@
  * SPECIAL RESTRICTION: No use of this code and files (artifacts) is permitted 
  * for the training of machine learning models or artificial intelligence 
  * without explicit written permission.
- * 
- * COMMERCIAL CLAUSE: Any enterprise deployment requires a paid commercial license.
- * Full license text is available in the LICENSE file in the root directory.
  */
 
 #ifndef LINEAR_SELECTOR_HPP
@@ -20,32 +17,25 @@ namespace MarkovAI {
 
 class LinearSelector {
 private:
-    int dim_n;             // Размерность пространства
-    int dim_m;             // Размерность подпространства
-    std::vector<float> h_Q; // Матрица Q на CPU
-    float* d_Q;            // Матрица Q на GPU
+    int dim_n;             
+    int dim_m;             
+    std::vector<float> h_Q; 
+    float* d_Q;            
 
 public:
-    // Инициализация с проверкой размерности N x N
-    LinearSelector(int n, int m, const std::vector<float>& matrix_Q) 
-        : dim_n(n), dim_m(m), d_Q(nullptr) {
-        if (matrix_Q.size() != static_cast<size_t>(n * n)) {
-            throw std::invalid_argument("Ошибка: Размерность матрицы Q должна быть N x N.");
-        }
-        h_Q = matrix_Q;
-        allocateGPU();
-    }
+    LinearSelector(int n, int m, const std::vector<float>& matrix_Q);
+    ~LinearSelector();
 
-    ~LinearSelector() {
-        freeGPU();
-    }
-
-    // Запрет копирования (защита от утечек памяти CUDA)
+    // Запрет копирования
     LinearSelector(const LinearSelector&) = delete;
     LinearSelector& operator=(const LinearSelector&) = delete;
 
-    // Метод запуска вычислений на GPU
+    // МЕТОД 1: Вычисления на GPU (CUDA)
     void select_projection_gpu(const float* d_input_x, float* d_output_v);
+
+    // МЕТОД 2: Вычисления на CPU (AVX2/SIMD) - НОВОЕ
+    // Принимает обычные указатели на оперативную память
+    void select_projection_cpu(const float* h_input_x, float* h_output_v);
 
 private:
     void allocateGPU();
