@@ -2,7 +2,12 @@
 # Licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
 cmake_minimum_required(VERSION 3.18)
-project(LinearSelectorLab LANGUAGES CXX CUDA)
+
+# Инициализируем только CXX. Это КРИТИЧНО для обхода ошибки определения компилятора на GitHub
+project(LinearSelectorLab LANGUAGES CXX)
+
+# Включаем CUDA отдельно
+enable_language(CUDA)
 
 # Настройка архитектуры
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
@@ -14,7 +19,7 @@ find_package(CUDAToolkit REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-# Собираем движок из нового main.cpp и CUDA-ядра
+# Собираем движок из нашего нового main.cpp и CUDA-ядра
 add_executable(LinearSelectorBenchmark 
     main.cpp 
     LinearSelector.cu
